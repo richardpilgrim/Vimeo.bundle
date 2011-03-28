@@ -28,17 +28,18 @@ def UpdateCache():
 
 ####################################################################################################
 def MainMenu():
-  dir = MediaContainer()
-  dir.Append(Function(DirectoryItem(GetMyStuff,       title=L("My Stuff"))))
-  dir.Append(Function(DirectoryItem(GetVideosRSS,     title="Staff Picks", thumb=R('staffpicks.png')), name='channels/staffpicks/videos', title2='Staff Picks'))
-  dir.Append(Function(DirectoryItem(FeaturedChannels, title="Featured Channels", thumb=R('featured.png'))))
-  dir.Append(Function(DirectoryItem(GetVideosRSS,     title="High Def", thumb=R('hd.png')), name='channels/hd/videos', title2="High Def"))
-  dir.Append(Function(DirectoryItem(Categories,       title="Channels", thumb=R('channels.png')), noun='channels', url='all'))
-  dir.Append(Function(DirectoryItem(Categories,       title=L("Groups"), thumb=R('groups.png')), noun='groups', url='all', sort='members'))
-  dir.Append(Function(SearchDirectoryItem(Search,     title=L("Search"), prompt=L("Search for Videos"), thumb=R('search.png'))))
-  dir.Append(PrefsItem(L("Preferences..."), thumb=R('prefs.png')))
+    dir = MediaContainer()
+    if Prefs['email'] and Prefs['password']:
+        dir.Append(Function(DirectoryItem(GetMyStuff,       title=L("My Stuff"))))
+    dir.Append(Function(DirectoryItem(GetVideosRSS,     title="Staff Picks", thumb=R('staffpicks.png')), name='channels/staffpicks/videos', title2='Staff Picks'))
+    dir.Append(Function(DirectoryItem(FeaturedChannels, title="Featured Channels", thumb=R('featured.png'))))
+    dir.Append(Function(DirectoryItem(GetVideosRSS,     title="High Def", thumb=R('hd.png')), name='channels/hd/videos', title2="High Def"))
+    dir.Append(Function(DirectoryItem(Categories,       title="Channels", thumb=R('channels.png')), noun='channels', url='all'))
+    dir.Append(Function(DirectoryItem(Categories,       title=L("Groups"), thumb=R('groups.png')), noun='groups', url='all', sort='members'))
+    dir.Append(Function(SearchDirectoryItem(Search,     title=L("Search"), prompt=L("Search for Videos"), thumb=R('search.png'))))
+    dir.Append(PrefsItem(L("Preferences..."), thumb=R('prefs.png')))
   
-  return dir
+    return dir
 
 ####################################################################################################
 def GetMyStuff(sender):
