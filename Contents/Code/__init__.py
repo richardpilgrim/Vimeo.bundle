@@ -241,7 +241,10 @@ def GetVideosRSS(sender, name, title2):
   
   dir = MediaContainer(viewGroup='Details', title2=title2, httpCookies=cookies)
 
-  for video in XML.ElementFromURL(VIMEO_URL + name + '/rss', errors='ignore').xpath('//item'):
+  # Deal with non utf-8 character problem by removing the <media:category> element before parsing the document as XML
+  xml = HTTP.Request(VIMEO_URL + name + '/rss').content
+  xml = re.sub('<media:category.+?<\/media:category>', '', xml)
+  for video in XML.ElementFromString(xml).xpath('//item'):
     title = video.xpath('./title')[0].text
     date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).strftime('%a %b %d, %Y')
     summary = HTML.ElementFromString(video.xpath('./description')[0].text).text_content()
