@@ -2,7 +2,7 @@ import re, string
 
 VIMEO_PREFIX      = "/video/vimeo"
 CACHE_INTERVAL    = 1800
-VIMEO_NAMESPACE   = {'v':'http://www.w3.org/2005/Atom', 'm':'http://search.yahoo.com/mrss/'}
+VIMEO_NAMESPACE   = {'atom':'http://www.w3.org/2005/Atom', 'media':'http://search.yahoo.com/mrss/'}
 VIMEO_URL         = 'http://www.vimeo.com/'
 VIMEO_LOAD_CLIP   = 'http://www.vimeo.com/moogaloop/load/clip:%s/local?param_md5=0&param_context_id=&param_force_embed=0&param_clip_id=3715286&param_show_portrait=0&param_multimoog=&param_server=vimeo.com&param_show_title=0&param_color=00ADEF&param_autoplay=0&param_show_byline=0&param_fullscreen=1&param_context=subscriptions|newest&param_force_info=undefined&context=subscriptions'
 VIMEO_PLAY_CLIP   = 'http://www.vimeo.com/moogaloop/play/clip:%s/%s/%s/?q=%s&type=local'
@@ -12,11 +12,11 @@ CLIENT_CAP_HEADER = 'X-Plex-Client-Capabilities'
 
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler(VIMEO_PREFIX, MainMenu, 'Vimeo', 'icon-default.jpg', 'art-default.png')
+  Plugin.AddPrefixHandler(VIMEO_PREFIX, MainMenu, 'Vimeo', 'icon-default.jpg', 'art-default.jpg')
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   MediaContainer.title1 = 'Vimeo'
   MediaContainer.content = 'Items'
-  MediaContainer.art = R('art-default.png')
+  MediaContainer.art = R('art-default.jpg')
   DirectoryItem.thumb = R('icon-default.jpg')
   HTTP.CacheTime = CACHE_INTERVAL
 
@@ -30,7 +30,7 @@ def UpdateCache():
 def MainMenu():
     dir = MediaContainer()
     if Prefs['email'] and Prefs['password']:
-        dir.Append(Function(DirectoryItem(GetMyStuff,       title=L("My Stuff"))))
+        dir.Append(Function(DirectoryItem(GetMyStuff,   title=L("My Stuff"))))
     dir.Append(Function(DirectoryItem(GetVideosRSS,     title="Staff Picks", thumb=R('staffpicks.png')), name='channels/staffpicks/videos', title2='Staff Picks'))
     dir.Append(Function(DirectoryItem(FeaturedChannels, title="Featured Channels", thumb=R('featured.png'))))
     dir.Append(Function(DirectoryItem(GetVideosRSS,     title="High Def", thumb=R('hd.png')), name='channels/hd/videos', title2="High Def"))
@@ -213,9 +213,6 @@ def Search(sender, query, page=1):
   dir.Append(Function(DirectoryItem(Search, title="More..."), query=query, page=page+1))
   return dir
 
-def StripTags(str):
-  return re.sub(r'<[^<>]+>', '', str)
-
 ####################################################################################################
 def GetVideosRSS(sender, name, title2):
   cookies = HTTP.GetCookiesForURL(VIMEO_URL)
@@ -244,21 +241,21 @@ def GetVideosRSS(sender, name, title2):
   
   dir = MediaContainer(viewGroup='Details', title2=title2, httpCookies=cookies)
 
-  for video in HTML.ElementFromURL(VIMEO_URL + name + '/rss', errors="ignore").xpath('//item', namespaces=VIMEO_NAMESPACE):
-    title = video.find('title').text
-    try: date = Datetime.ParseDate(video.xpath('//pubDate')[0].text).strftime('%a %b %d, %Y')
-    except:date = Datetime.ParseDate(video.xpath('//pubdate')[0].text).strftime('%a %b %d, %Y')
-    desc = HTML.ElementFromString(video.find('description').text)
+  for video in XML.ElementFromURL(VIMEO_URL + name + '/rss', errors='ignore').xpath('//item'):
+    title = video.xpath('./title')[0].text
+    date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).strftime('%a %b %d, %Y')
+    summary = HTML.ElementFromString(video.xpath('./description')[0].text).text_content()
+
     try:
-      thumb = video.xpath('content/thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
-      key = video.xpath('content/player', namespaces=VIMEO_NAMESPACE)[0].get('url')
-      key = key[key.rfind('=')+1:]
-      directKey = Function(GetDirectVideo, id=key, high=direct_high)
-      directKey = None
-      summary = StripTags(video.find('description').text)
-      dir.Append(Function(VideoItem(PlayVideo, title, date, summary, thumb=thumb, keyDirect=directKey), id=key))
+      thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
     except:
-      pass
+      thumb = None
+
+    key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
+    key = key[key.rfind('=')+1:]
+    directKey = Function(GetDirectVideo, id=key, high=direct_high)
+    directKey = None
+    dir.Append(Function(VideoItem(PlayVideo, title=title, subtitle=date, summary=summary, thumb=thumb, keyDirect=directKey), id=key))
   return dir
 
 import urllib2, httplib
