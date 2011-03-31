@@ -251,11 +251,15 @@ def GetVideosRSS(sender, name, title2):
     except:
       thumb = None
 
-    key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
-    key = key[key.rfind('=')+1:]
-    directKey = Function(GetDirectVideo, id=key, high=direct_high)
-    directKey = None
-    dir.Append(Function(VideoItem(PlayVideo, title=title, subtitle=date, summary=summary, thumb=thumb, keyDirect=directKey), id=key))
+    try:
+      key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
+      key = key[key.rfind('=')+1:]
+      directKey = Function(GetDirectVideo, id=key, high=direct_high)
+      directKey = None
+      dir.Append(Function(VideoItem(PlayVideo, title=title, subtitle=date, summary=summary, thumb=thumb, keyDirect=directKey), id=key))
+    except:
+      pass
+
   return dir
 
 import urllib2, httplib
