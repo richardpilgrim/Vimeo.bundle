@@ -13,10 +13,12 @@ CLIENT_CAP_HEADER = 'X-Plex-Client-Capabilities'
 ####################################################################################################
 def Start():
   Plugin.AddPrefixHandler(VIMEO_PREFIX, MainMenu, 'Vimeo', 'icon-default.jpg', 'art-default.jpg')
-  Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
+  Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
+  Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
   MediaContainer.title1 = 'Vimeo'
   MediaContainer.content = 'Items'
   MediaContainer.art = R('art-default.jpg')
+  MediaContainer.viewGroup = 'List'
   DirectoryItem.thumb = R('icon-default.jpg')
   HTTP.CacheTime = CACHE_INTERVAL
 
@@ -38,7 +40,7 @@ def MainMenu():
     dir.Append(Function(DirectoryItem(Categories,       title=L("Groups"), thumb=R('groups.png')), noun='groups', url='all', sort='members'))
     dir.Append(Function(SearchDirectoryItem(Search,     title=L("Search"), prompt=L("Search for Videos"), thumb=R('search.png'))))
     dir.Append(PrefsItem(L("Preferences..."), thumb=R('prefs.png')))
-  
+
     return dir
 
 ####################################################################################################
@@ -83,7 +85,7 @@ def GetMyStuff(sender):
 
 ####################################################################################################
 def GetContacts(sender, url):
-  dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+  dir = MediaContainer(viewGroup='InfoList', title2=sender.itemTitle)
 
   url += '/sort:name'
   for contact in HTML.ElementFromURL(VIMEO_URL + url).xpath('//div[@class="contact"]'):
@@ -106,7 +108,7 @@ def GetContacts(sender, url):
     try:
         summary += info.xpath('a[@class="videos"]')[0].text
         url = info.xpath('a[@class="videos"]')[0].get('href')
-        dir.Append(Function(DirectoryItem(GetVideosRSS, title=title, subtitle=subtitle, thumb=thumb, summary=summary), name=url, title2=title))
+        dir.Append(Function(DirectoryItem(GetVideosRSS, title=title, subtitle=subtitle, thumb=Function(GetThumb, url=thumb), summary=summary), name=url, title2=title))
     except:
         # doesn't have any videos for some reason.. skip
         pass
@@ -121,12 +123,12 @@ def FeaturedChannels(sender):
     thumb = re.findall("'(.*)'", c.get('style'))[0]
     url = c.find('a').get('href')
     url = url[url.rfind('/')+1:]
-    dir.Append(Function(DirectoryItem(GetVideosRSS, title, thumb=thumb), name='channels/' + url + '/videos', title2=title))
+    dir.Append(Function(DirectoryItem(GetVideosRSS, title, thumb=Function(GetThumb, url=thumb)), name='channels/' + url + '/videos', title2=title))
   return dir
 
 ####################################################################################################
 def Categories(sender, noun, url, sort='subscribed'):
-  dir = MediaContainer(viewGroup='Details', title2='Channels')
+  dir = MediaContainer(viewGroup='InfoList', title2='Channels')
   for category in HTML.ElementFromURL(VIMEO_URL + 'channels').xpath('//div[@id="cloud"]/ul/li'):
     title = string.capwords(category.find('a').text)
     subtitle = category.find('span').text + ' ' + noun
@@ -137,7 +139,7 @@ def Categories(sender, noun, url, sort='subscribed'):
 
 ####################################################################################################
 def GetDirectory(sender, category=None, noun=None, url=None, page=1, sort='subscribed', narrow=None):
-  dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle, replaceParent=(page>1))
+  dir = MediaContainer(viewGroup='InfoList', title2=sender.itemTitle, replaceParent=(page>1))
 
   the_url = VIMEO_DIRECTORY % (noun, url, page)
   if category is not None:
@@ -181,14 +183,14 @@ def GetDirectory(sender, category=None, noun=None, url=None, page=1, sort='subsc
     thumb = link.find('img').get('src')
     channel = link.get('href')
     channel = channel[channel.rfind('/')+1:]
-    dir.Append(Function(DirectoryItem(GetVideosRSS, title=title, summary=desc, subtitle=subtitle, thumb=thumb), name=noun+'/'+channel+'/videos', title2=title))
+    dir.Append(Function(DirectoryItem(GetVideosRSS, title=title, summary=desc, subtitle=subtitle, thumb=Function(GetThumb, url=thumb)), name=noun+'/'+channel+'/videos', title2=title))
 
   dir.Append(Function(DirectoryItem(GetDirectory, title="More..."), category=category, noun=noun, url=url, sort=sort, narrow=narrow, page=page+1))
   return dir
 
 ####################################################################################################
 def Search(sender, query, page=1):
-  dir = MediaContainer(viewGroup='Details', title2='Search Results', replaceParent=(page>1))
+  dir = MediaContainer(viewGroup='InfoList', title2='Search Results', replaceParent=(page>1))
   query = query.replace(' ', '+')
   
   # Need to get the security token.
@@ -208,7 +210,7 @@ def Search(sender, query, page=1):
     except:
         PMS.Log(XML.StringFromElement(result))
         continue
-    dir.Append(Function(VideoItem(PlayVideo, title, subtitle, desc, thumb=thumb), ext='flv', id=key))
+    dir.Append(Function(VideoItem(PlayVideo, title, subtitle, desc, thumb=Function(GetThumb, url=thumb)), ext='flv', id=key))
 
   dir.Append(Function(DirectoryItem(Search, title="More..."), query=query, page=page+1))
   return dir
@@ -239,7 +241,7 @@ def GetVideosRSS(sender, name, title2):
     direct = True
     print "Direct"
   
-  dir = MediaContainer(viewGroup='Details', title2=title2, httpCookies=cookies)
+  dir = MediaContainer(viewGroup='InfoList', title2=title2, httpCookies=cookies)
 
   # Deal with non utf-8 character problem by removing the <media:category> element before parsing the document as XML
   xml = HTTP.Request(VIMEO_URL + name + '/rss').content
@@ -259,7 +261,7 @@ def GetVideosRSS(sender, name, title2):
       key = key[key.rfind('=')+1:]
       directKey = Function(GetDirectVideo, id=key, high=direct_high)
       directKey = None
-      dir.Append(Function(VideoItem(PlayVideo, title=title, subtitle=date, summary=summary, thumb=thumb, keyDirect=directKey), id=key))
+      dir.Append(Function(VideoItem(PlayVideo, title=title, subtitle=date, summary=summary, thumb=Function(GetThumb, url=thumb), keyDirect=directKey), id=key))
     except:
       pass
 
@@ -347,6 +349,15 @@ def PlayVideo(sender, id):
     f = opener.open(request)
     if f.status == 301 or f.status == 302:
       return Redirect(f.url)
+
+####################################################################################################
+def GetThumb(url):
+  try:
+    data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
+    return DataObject(data, 'image/jpeg')
+  except:
+    pass
+  return Redirect(R('icon-default.jpg'))
 
 ####################################################################################################
 def Login():
