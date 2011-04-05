@@ -246,6 +246,12 @@ def GetVideosRSS(sender, name, title2):
   # Deal with non utf-8 character problem by removing the <media:category> element before parsing the document as XML
   xml = HTTP.Request(VIMEO_URL + name + '/rss').content
   xml = re.sub('<media:category.+?<\/media:category>', '', xml)
+
+  # Remove any control characters, yucky fix :|
+  # http://stackoverflow.com/questions/3748855/how-do-i-specify-a-range-of-unicode-characters-in-a-regular-expression-in-python
+  # http://www.unicode.org/charts/PDF/U0000.pdf
+  xml = re.sub(u'[\u0000-\u001F]', '', xml)
+
   for video in XML.ElementFromString(xml).xpath('//item'):
     title = video.xpath('./title')[0].text
     date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).strftime('%a %b %d, %Y')
