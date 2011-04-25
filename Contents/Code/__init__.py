@@ -29,7 +29,7 @@ def UpdateCache():
   HTTP.Request(VIMEO_URL+'channels/staffpicks/videos/rss').content
 
 ####################################################################################################
-def MainMenu():
+def MainMenu(noCache=True):
     dir = MediaContainer()
     if Prefs['email'] and Prefs['password']:
         dir.Append(Function(DirectoryItem(GetMyStuff,   title=L("My Stuff"))))
