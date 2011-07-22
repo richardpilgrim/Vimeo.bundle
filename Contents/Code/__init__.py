@@ -252,24 +252,41 @@ def GetVideosRSS(sender, name, title2):
   # http://www.unicode.org/charts/PDF/U0000.pdf
   xml = re.sub(u'[\u0000-\u001F]', '', xml)
 
-  for video in XML.ElementFromString(xml).xpath('//item'):
-    title = video.xpath('./title')[0].text
-    date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).strftime('%a %b %d, %Y')
-    summary = HTML.ElementFromString(video.xpath('./description')[0].text).text_content()
+  resultDict = {}
 
-    try:
-      thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
-    except:
-      thumb = None
+  @parallelize
+  def GetVideos():
+    videos = XML.ElementFromString(xml).xpath('//item')
 
-    try:
-      key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
-      key = key[key.rfind('=')+1:]
-      directKey = Function(GetDirectVideo, id=key, high=direct_high)
-      directKey = None
-      dir.Append(Function(VideoItem(PlayVideo, title=title, subtitle=date, summary=summary, thumb=Function(GetThumb, url=thumb), keyDirect=directKey), id=key))
-    except:
-      pass
+    for num in range(len(videos)):
+      video = videos[num]
+
+      @task
+      def GetVideo(num=num, resultDict=resultDict, video=video):
+        title = video.xpath('./title')[0].text
+        date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).strftime('%a %b %d, %Y')
+        summary = HTML.ElementFromString(video.xpath('./description')[0].text).text_content()
+
+        try:
+          thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
+        except:
+          thumb = None
+
+        try:
+          key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
+          key = key[key.rfind('=')+1:]
+          directKey = Function(GetDirectVideo, id=key, high=direct_high)
+          directKey = None
+
+          if 'video' in JSON.ObjectFromURL('http://player.vimeo.com/config/%s' % key, cacheTime=CACHE_1DAY):
+            resultDict[num] = VideoItem(key=Function(PlayVideo, id=key), title=title, subtitle=date, summary=summary, thumb=Function(GetThumb, url=thumb), keyDirect=directKey)
+        except:
+          pass
+
+  keys = resultDict.keys()
+  keys.sort()
+  for key in keys:
+    dir.Append(resultDict[key])
 
   return dir
 
