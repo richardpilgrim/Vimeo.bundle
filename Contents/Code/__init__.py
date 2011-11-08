@@ -1,24 +1,21 @@
 import re, string
 
-VIMEO_PREFIX      = "/video/vimeo"
-CACHE_INTERVAL    = 1800
 VIMEO_NAMESPACE   = {'atom':'http://www.w3.org/2005/Atom', 'media':'http://search.yahoo.com/mrss/'}
 VIMEO_URL         = 'http://www.vimeo.com/'
 VIMEO_LOAD_CLIP   = 'http://www.vimeo.com/moogaloop/load/clip:%s/local?param_md5=0&param_context_id=&param_force_embed=0&param_clip_id=3715286&param_show_portrait=0&param_multimoog=&param_server=vimeo.com&param_show_title=0&param_color=00ADEF&param_autoplay=0&param_show_byline=0&param_fullscreen=1&param_context=subscriptions|newest&param_force_info=undefined&context=subscriptions'
 VIMEO_PLAY_CLIP   = 'http://www.vimeo.com/moogaloop/play/clip:%s/%s/%s/?q=%s&type=local'
 VIMEO_DIRECTORY   = 'http://vimeo.com/%s/%s/page:%d'
 VIMEO_SEARCH      = 'http://vimeo.com/search/videos/search:%s/st/%s/page:%d/sort:plays/format:detail'
-CLIENT_CAP_HEADER = 'X-Plex-Client-Capabilities'
 
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler(VIMEO_PREFIX, MainMenu, 'Vimeo', 'icon-default.jpg', 'art-default.png')
+  Plugin.AddPrefixHandler('/video/vimeo', MainMenu, 'Vimeo', 'icon-default.jpg', 'art-default.png')
   Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
   ObjectContainer.title1 = 'Vimeo'
   ObjectContainer.content = ContainerContent.GenericVideos
   ObjectContainer.art = R('art-default.jpg')
   DirectoryObject.thumb = R('icon-default.jpg')
-  HTTP.CacheTime = CACHE_INTERVAL
+  HTTP.CacheTime = 1800
 
 ####################################################################################################
 def UpdateCache():

@@ -20,16 +20,12 @@
 	<array>
 		<string>AAC</string>
 	</array>
-	<key>PlexClientPlatforms</key>
-	<string>MacOSX,iOS,Android,LGTV</string>
 	<key>PlexFrameworkVersion</key>
 	<string>2</string>
 	<key>PlexMediaContainer</key>
 	<array>
 		<string>MP4</string>
 	</array>
-	<key>PlexPluginConsoleLogging</key>
-	<string>0</string>
 	<key>PlexPluginMode</key>
 	<string>AlwaysOn</string>
 	<key>PlexVideoCodec</key>
