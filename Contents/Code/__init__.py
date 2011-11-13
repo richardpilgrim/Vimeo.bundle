@@ -149,7 +149,7 @@ def GetContacts(url, title2=None):
         summary = summary,
       ))
     except:
-      # Doesn't have any videos for some reason… skip
+      # Doesn't have any videos for some reason... skip
       pass
 
   return oc
