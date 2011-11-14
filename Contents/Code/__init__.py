@@ -265,7 +265,7 @@ def Search(query, page=1):
 
   for result in HTML.ElementFromString(vimeo_html).xpath('//div[@class="item last"]'):
     title = result.xpath('./div/div[@class="title"]/a')[0].text
-    subtitle_items = [e.strip() for e in result.xpath('/div/div[@class="date"]')[0].itertext()]
+    subtitle_items = [e.strip() for e in result.xpath('./div/div[@class="date"]')[0].itertext()]
     subtitle = "%s (%s plays)" % (subtitle_items[0], subtitle_items[2])
     try: desc = result.xpath('./div/div[@class="description"]')[0].text
     except: desc =''
@@ -294,7 +294,8 @@ def Search(query, page=1):
 
 ####################################################################################################
 def GetVideosRSS(url, title2):
-  oc = ObjectContainer(title2=title2, http_cookies=HTTP.CookiesForURL(VIMEO_URL), view_group='InfoList')
+#  oc = ObjectContainer(title2=title2, http_cookies=HTTP.CookiesForURL(VIMEO_URL), view_group='InfoList')
+  oc = ObjectContainer(title2=title2, view_group='InfoList')
 
   for video in XML.ElementFromURL(VIMEO_URL + url + '/rss', errors="ignore").xpath('//item', namespaces=VIMEO_NAMESPACE):
     title = video.find('title').text
