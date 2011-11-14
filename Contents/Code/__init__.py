@@ -29,7 +29,7 @@ def MainMenu():
         title   = L('My Stuff')
       ),
       DirectoryObject(
-        key     = Callback(GetVideosRSS, url='/channels/staffpicks/videos', title2='Staff Picks'),
+        key     = Callback(GetVideosRSS, url='/channels/staffpicks/videos/rss', title2='Staff Picks'),
         title   = L('Staff Picks'),
         thumb   = R('staffpicks.png')
       ),
@@ -39,7 +39,7 @@ def MainMenu():
         thumb   = R('featured.png')
       ),
       DirectoryObject(
-        key     = Callback(GetVideosRSS, url='/channels/hd/videos', title2='High Def'),
+        key     = Callback(GetVideosRSS, url='/channels/hd/videos/rss', title2='High Def'),
         title   = L('High Def'), 
         thumb   = R('hd.png')
       ),
@@ -90,12 +90,12 @@ def GetMyStuff():
   oc = ObjectContainer()
 
   oc.add(DirectoryObject(
-    key = Callback(GetVideosRSS, url='/'+user+'/videos', title2=L('My Videos')),
+    key = Callback(GetVideosRSS, url='/'+user+'/videos/rss', title2=L('My Videos')),
     title = 'My Videos'
   ))
 
   oc.add(DirectoryObject(
-    key = Callback(GetVideosRSS, url='/'+user+'/likes', title2=L('My Likes')),
+    key = Callback(GetVideosRSS, url='/'+user+'/likes/rss', title2=L('My Likes')),
     title = 'My Likes'
   ))
 
@@ -110,11 +110,21 @@ def GetMyStuff():
   ))
 
   oc.add(DirectoryObject(
-    key = Callback(GetContacts, url='/'+user+'/contacts', title2='My Contacts'),
+    key = Callback(GetContacts, url='/'+user+'/contacts', title2=L('My Contacts')),
     title = L('My Contacts')
   ))
 
+  oc.add(DirectoryObject(
+    key = Callback(GetMySubscriptions, url='/inbox/subscriptions', title2=L('My Subscriptions')),
+    title = L('My Subscriptions')
+  ))
+
   return oc
+
+####################################################################################################
+def GetMySubscriptions(url, title2=None):
+  rss_url = HTML.ElementFromURL(VIMEO_URL + url).xpath('//link[@title="Your subscription videos"]')[0].get('href')
+  return GetVideosRSS(url=rss_url, title2=title2)
 
 ####################################################################################################
 def GetContacts(url, title2=None):
@@ -140,7 +150,7 @@ def GetContacts(url, title2=None):
 
     try:
       summary += info.xpath('./a[@class="videos"]')[0].text
-      url = info.xpath('./a[@class="videos"]')[0].get('href')
+      url = info.xpath('./a[@class="videos"]')[0].get('href') + '/rss'
       oc.add(DirectoryObject(
         key = Callback(GetVideosRSS, url=url, title2=title),
         title = title,
@@ -165,7 +175,7 @@ def FeaturedChannels():
     url = url[url.rfind('/')+1:]
 
     oc.add(DirectoryObject(
-      key = Callback(GetVideosRSS, url='/channels/'+url+'/videos', title2=title),
+      key = Callback(GetVideosRSS, url='/channels/'+url+'/videos/rss', title2=title),
       title = title,
       thumb = thumb
     ))
@@ -238,7 +248,7 @@ def GetDirectory(category=None, noun=None, url=None, page=1, sort='subscribed', 
     channel = channel[channel.rfind('/')+1:]
     
     oc.add(DirectoryObject(
-      key = Callback(GetVideosRSS, url='/'+noun+'/'+channel+'/videos', title2=title),
+      key = Callback(GetVideosRSS, url='/'+noun+'/'+channel+'/videos/rss', title2=title),
       title = title,
       tagline = subtitle,
       summary = desc,
@@ -294,10 +304,12 @@ def Search(query, page=1):
 
 ####################################################################################################
 def GetVideosRSS(url, title2):
-#  oc = ObjectContainer(title2=title2, http_cookies=HTTP.CookiesForURL(VIMEO_URL), view_group='InfoList')
   oc = ObjectContainer(title2=title2, view_group='InfoList')
 
-  for video in XML.ElementFromURL(VIMEO_URL + url + '/rss', errors="ignore").xpath('//item', namespaces=VIMEO_NAMESPACE):
+  if url.find(VIMEO_URL) == -1:
+    url = VIMEO_URL + url
+
+  for video in XML.ElementFromURL(url, errors="ignore").xpath('//item', namespaces=VIMEO_NAMESPACE):
     title = video.find('title').text
     date = Datetime.ParseDate(video.find('pubDate').text).strftime('%a %b %d, %Y')
     desc = HTML.ElementFromString(video.find('description').text)
