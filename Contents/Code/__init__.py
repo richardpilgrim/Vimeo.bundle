@@ -317,35 +317,54 @@ def GetVideosRSS(url, title2):
   # http://www.unicode.org/charts/PDF/U0000.pdf
   xml = re.sub(u'[\u0000-\u001F]', '', xml)
 
-  for video in XML.ElementFromString(xml).xpath('//item'):
-    title = video.xpath('./title')[0].text.strip()
-    date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).date()
+  resultDict = {}
 
-    try:
-      summary = HTML.ElementFromString(video.xpath('./description')[0].text.replace('<br />', '\n')).xpath('//p')[1].text_content()
-    except:
-      summary = ''
+  @parallelize
+  def GetVideos():
+    videos = XML.ElementFromString(xml).xpath('//item')
 
-    try:
-      thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
-    except:
-      thumb = None
+    for num in range(len(videos)):
+      video = videos[num]
 
-    try:
-      key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
-      key = key[key.rfind('=')+1:]
-      url = 'http://vimeo.com/%s' % key
+      @task
+      def GetVideo(num=num, resultDict=resultDict, video=video):
+        title = video.xpath('./title')[0].text.strip()
+        date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).date()
 
-      oc.add(VideoClipObject(
-        title = title,
-        summary = summary,
-        thumb = Callback(GetThumb, url=thumb),
-        originally_available_at = date,
-        url = url
-      ))
-    except:
-      Log('Failed to load video: %s' % title)
-      pass
+        try:
+          summary = HTML.ElementFromString(video.xpath('./description')[0].text.replace('<br />', '\n')).xpath('//p')[1].text_content()
+        except:
+          summary = ''
+
+        try:
+          thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
+        except:
+          thumb = None
+
+        try:
+          key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
+          key = key[key.rfind('=')+1:]
+          url = 'http://vimeo.com/%s' % key
+
+          if 'video' in JSON.ObjectFromURL('http://player.vimeo.com/config/%s' % key, cacheTime=CACHE_1DAY):
+            resultDict[num] = VideoClipObject(
+              title = title,
+              summary = summary,
+              thumb = Callback(GetThumb, url=thumb),
+              originally_available_at = date,
+              url = url
+            )
+          else:
+            Log('Video is private: %s' % title)
+
+        except:
+          Log('Failed to load video: %s' % title)
+          pass
+
+  keys = resultDict.keys()
+  keys.sort()
+  for key in keys:
+    oc.add(resultDict[key])
 
   return oc
 
