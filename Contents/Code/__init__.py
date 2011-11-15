@@ -301,7 +301,6 @@ def Search(query, page=1):
   ))
   return oc
 
-
 ####################################################################################################
 def GetVideosRSS(url, title2):
   oc = ObjectContainer(title2=title2, view_group='InfoList')
@@ -309,22 +308,39 @@ def GetVideosRSS(url, title2):
   if url.find(VIMEO_URL) == -1:
     url = VIMEO_URL + url
 
-  for video in XML.ElementFromURL(url, errors="ignore").xpath('//item', namespaces=VIMEO_NAMESPACE):
-    title = video.find('title').text
-    date = Datetime.ParseDate(video.find('pubDate').text).strftime('%a %b %d, %Y')
-    desc = HTML.ElementFromString(video.find('description').text)
+  # Deal with non utf-8 character problem by removing the <media:category> element before parsing the document as XML
+  xml = HTTP.Request(url).content
+  xml = re.sub('<media:category.+?<\/media:category>', '', xml)
+
+  # Remove any control characters, yucky fix :|
+  # http://stackoverflow.com/questions/3748855/how-do-i-specify-a-range-of-unicode-characters-in-a-regular-expression-in-python
+  # http://www.unicode.org/charts/PDF/U0000.pdf
+  xml = re.sub(u'[\u0000-\u001F]', '', xml)
+
+  for video in XML.ElementFromString(xml).xpath('//item'):
+    title = video.xpath('./title')[0].text.strip()
+    date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).date()
+
+    try:
+      summary = HTML.ElementFromString(video.xpath('./description')[0].text.replace('<br />', '\n')).xpath('//p')[1].text_content()
+    except:
+      summary = ''
+
     try:
       thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
+    except:
+      thumb = None
+
+    try:
       key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
       key = key[key.rfind('=')+1:]
-      summary = String.StripTags(video.find('description').text)
-
       url = 'http://vimeo.com/%s' % key
 
       oc.add(VideoClipObject(
         title = title,
         summary = summary,
         thumb = thumb,
+        originally_available_at = date,
         url = url
       ))
     except:
