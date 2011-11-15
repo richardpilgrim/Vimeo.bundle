@@ -70,6 +70,7 @@ def MainMenu():
 
 ####################################################################################################
 def GetMyStuff():
+  oc = ObjectContainer(no_cache=True)
 
   # See if we need to log in.
   xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
@@ -87,7 +88,6 @@ def GetMyStuff():
       return MessageContainer(header='Error logging in', message='Check your email and password in the preferences.')
 
   user = xml.xpath('.//a[@class="label" and text()="Me"]')[0].get('href')[1:]
-  oc = ObjectContainer()
 
   oc.add(DirectoryObject(
     key = Callback(GetVideosRSS, url='/'+user+'/videos/rss', title2=L('My Videos')),
@@ -155,7 +155,7 @@ def GetContacts(url, title2=None):
         key = Callback(GetVideosRSS, url=url, title2=title),
         title = title,
         tagline = subtitle,
-        thumb = thumb,
+        thumb = Callback(GetThumb, url=thumb),
         summary = summary,
       ))
     except:
@@ -177,7 +177,7 @@ def FeaturedChannels():
     oc.add(DirectoryObject(
       key = Callback(GetVideosRSS, url='/channels/'+url+'/videos/rss', title2=title),
       title = title,
-      thumb = thumb
+      thumb = Callback(GetThumb, url=thumb)
     ))
 
   return oc
@@ -252,7 +252,7 @@ def GetDirectory(category=None, noun=None, url=None, page=1, sort='subscribed', 
       title = title,
       tagline = subtitle,
       summary = desc,
-      thumb = thumb 
+      thumb = Callback(GetThumb, url=thumb)
     ))
 
   oc.add(DirectoryObject(
@@ -291,7 +291,7 @@ def Search(query, page=1):
       title = title,
       tagline = subtitle,
       summary = desc,
-      thumb = thumb,
+      thumb = Callback(GetThumb, url=thumb),
       url = url
     ))
     
@@ -339,7 +339,7 @@ def GetVideosRSS(url, title2):
       oc.add(VideoClipObject(
         title = title,
         summary = summary,
-        thumb = thumb,
+        thumb = Callback(GetThumb, url=thumb),
         originally_available_at = date,
         url = url
       ))
