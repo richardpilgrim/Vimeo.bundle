@@ -355,7 +355,7 @@ def GetVideosRSS(url, title2):
               url = url
             )
           else:
-            Log('Video is private: %s' % title)
+            Log('Video is private: %s - http://vimeo.com/%s' % (title, key))
 
         except:
           Log('Failed to load video: %s' % title)
