@@ -370,11 +370,12 @@ def GetVideosRSS(url, title2):
 
 ####################################################################################################
 def GetThumb(url):
-  try:
-    data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
-    return DataObject(data, 'image/jpeg')
-  except:
-    pass
+  if url:
+    try:
+      data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
+      return DataObject(data, 'image/jpeg')
+    except:
+      pass
 
   return Redirect(R(ICON))
 
