@@ -337,7 +337,7 @@ def GetVideosRSS(url, title2):
           summary = ''
 
         try:
-          thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url')
+          thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url').replace('_200.jpg', '_640.jpg')
         except:
           thumb = None
 
