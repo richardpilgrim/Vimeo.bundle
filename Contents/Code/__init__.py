@@ -332,7 +332,11 @@ def GetVideosRSS(url, title2):
         date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).date()
 
         try:
-          summary = HTML.ElementFromString(video.xpath('./description')[0].text.replace('<br />', '\n')).xpath('//p')[1].text_content()
+          summary = video.xpath('./description')[0].text.replace('\n', '').replace('<br>', '<br />')
+          summary = re.search('(<p class="first">.*</p>)', summary, re.DOTALL).group(1)
+          summary = summary.split('<strong>')[0]
+          summary = HTML.ElementFromString(summary).xpath('//text()')
+          summary = '\n'.join(summary)
         except:
           summary = ''
 
