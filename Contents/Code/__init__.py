@@ -7,7 +7,7 @@ VIMEO_PLAY_CLIP   = 'http://vimeo.com/moogaloop/play/clip:%s/%s/%s/?q=%s&type=lo
 VIMEO_DIRECTORY   = 'http://vimeo.com/%s/%s/page:%d'
 VIMEO_SEARCH      = 'http://vimeo.com/search/videos/search:%s/st/%s/page:%d/sort:plays/format:detail'
 
-ICON = 'icon-default.jpg'
+ICON = 'icon-default.png'
 ART = 'art-default.jpg'
 
 ####################################################################################################
