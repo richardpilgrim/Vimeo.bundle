@@ -263,7 +263,7 @@ def GetDirectory(category=None, noun=None, url=None, page=1, sort='subscribed', 
   return oc
 
 ####################################################################################################
-def Search(query, page=1):
+def Search(query='dog', page=1):
   oc = ObjectContainer(title2=L('Search Results'), view_group='InfoList', replace_parent=(page > 1))
   query = query.replace(' ', '+')
   
