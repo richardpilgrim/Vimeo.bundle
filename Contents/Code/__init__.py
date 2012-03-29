@@ -12,6 +12,7 @@ ART = 'art-default.jpg'
 
 ####################################################################################################
 def Start():
+
   Plugin.AddPrefixHandler('/video/vimeo', MainMenu, 'Vimeo', ICON, ART)
   Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
   ObjectContainer.title1 = 'Vimeo'
@@ -22,6 +23,7 @@ def Start():
 
 ####################################################################################################
 def MainMenu():
+
   oc = ObjectContainer(
     objects = [
       DirectoryObject(
@@ -70,6 +72,7 @@ def MainMenu():
 
 ####################################################################################################
 def GetMyStuff():
+
   oc = ObjectContainer(no_cache=True)
 
   # See if we need to log in.
@@ -123,11 +126,13 @@ def GetMyStuff():
 
 ####################################################################################################
 def GetMySubscriptions(url, title2=None):
+
   rss_url = HTML.ElementFromURL(VIMEO_URL + url).xpath('//link[@title="Your subscription videos"]')[0].get('href')
   return GetVideosRSS(url=rss_url, title2=title2)
 
 ####################################################################################################
 def GetContacts(url, title2=None):
+
   oc = ObjectContainer(title2=title2, view_group='InfoList')
 
   url += '/sort:name'
@@ -166,6 +171,7 @@ def GetContacts(url, title2=None):
 
 ####################################################################################################
 def FeaturedChannels():
+
   oc = ObjectContainer(title2=L('Featured Channels'), view_group='InfoList')
 
   for c in HTML.ElementFromURL(VIMEO_URL + '/channels').xpath("//div[@class='badge']"):
@@ -184,6 +190,7 @@ def FeaturedChannels():
 
 ####################################################################################################
 def Categories(noun, url, sort='subscribed'):
+
   oc = ObjectContainer(title2=L('Channels'), view_group='InfoList')
 
   for category in HTML.ElementFromURL(VIMEO_URL + '/channels').xpath('//div[@id="cloud"]/ul/li'):
@@ -202,6 +209,7 @@ def Categories(noun, url, sort='subscribed'):
 
 ####################################################################################################
 def GetDirectory(category=None, noun=None, url=None, page=1, sort='subscribed', narrow=None, title2=None):
+
   oc = ObjectContainer(title2=title2, view_group='InfoList', replace_parent=(page > 1))
 
   the_url = VIMEO_DIRECTORY % (noun, url, page)
@@ -264,6 +272,7 @@ def GetDirectory(category=None, noun=None, url=None, page=1, sort='subscribed', 
 
 ####################################################################################################
 def Search(query='dog', page=1):
+
   oc = ObjectContainer(title2=L('Search Results'), view_group='InfoList', replace_parent=(page > 1))
   query = query.replace(' ', '+')
   
@@ -303,6 +312,7 @@ def Search(query='dog', page=1):
 
 ####################################################################################################
 def GetVideosRSS(url, title2):
+
   oc = ObjectContainer(title2=title2, view_group='InfoList')
 
   if url.find(VIMEO_URL) == -1:
@@ -374,6 +384,7 @@ def GetVideosRSS(url, title2):
 
 ####################################################################################################
 def GetThumb(url):
+
   if url:
     try:
       data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
@@ -385,6 +396,7 @@ def GetThumb(url):
 
 ####################################################################################################
 def Login():
+
   xsrft = HTML.ElementFromURL('https://secure.vimeo.com/log_in', cacheTime=0).xpath('//input[@id="xsrft"]')[0].get('value')
 
   values = {
