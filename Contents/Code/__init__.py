@@ -20,6 +20,7 @@ def Start():
   ObjectContainer.art = R(ART)
   DirectoryObject.thumb = R(ICON)
   HTTP.CacheTime = 1800
+  HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20100101 Firefox/11.0'
 
 ####################################################################################################
 def MainMenu():
@@ -277,9 +278,14 @@ def Search(query='dog', page=1):
   query = query.replace(' ', '+')
   
   # Need to get the security token.
-  vimeo_page = HTML.ElementFromURL(VIMEO_URL, cacheTime=0)
-  security_token = vimeo_page.xpath('.//input[@id="xsrft"]')[0].get('value')[0:8]
-  
+  data = HTTP.Request(VIMEO_URL, cacheTime=0).content
+
+  try:
+    vimeo_page = HTML.ElementFromString(data, cacheTime=0)
+    security_token = vimeo_page.xpath('//input[@id="xsrft"]')[0].get('value')[0:8]
+  except:
+    security_token = re.search("xsrft:(\s*)'(?P<xsrft>[^']+)'", data).group('xsrft')[0:8]
+
   vimeo_html = HTTP.Request(VIMEO_SEARCH % (query, security_token, page), headers={"Cookie" : "searchtoken="+security_token}).content
 
   for result in HTML.ElementFromString(vimeo_html).xpath('//div[@class="item last"]'):
