@@ -415,14 +415,13 @@ def GetThumb(url):
 ####################################################################################################
 def Login():
 
-  page = HTTP.Request('http://vimeo.com/log_in', cacheTime=0).content
-  Log(page) # wtf? Without this Log() statement, the code below fails, because it can't find xsrft ?!?!?!
+  data = HTTP.Request('http://vimeo.com/log_in', cacheTime=0).content
 
   try:
     vimeo_page = HTML.ElementFromString(data)
     security_token = vimeo_page.xpath('//input[@id="xsrft"]')[0].get('value')
   except:
-    security_token = re.search("xsrft:(\s*)'(?P<xsrft>[^']+)'", page).group('xsrft')
+    security_token = re.search("xsrft:(\s*)'(?P<xsrft>[^']+)'", data).group('xsrft')
 
   values = {
      'sign_in[email]' : Prefs['email'],
