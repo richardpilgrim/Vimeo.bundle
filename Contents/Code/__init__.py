@@ -410,7 +410,7 @@ def GetThumb(url):
 ####################################################################################################
 def Login():
 
-  page = HTTP.Request('http://vimeo.com/log_in').content
+  page = HTTP.Request('http://vimeo.com/log_in', cacheTime=0).content
 
   try:
     vimeo_page = HTML.ElementFromString(data)
