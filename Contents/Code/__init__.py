@@ -77,14 +77,21 @@ def GetMyStuff():
   oc = ObjectContainer(no_cache=True)
 
   # See if we need to log in.
-  xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
-  if xml.xpath('//title')[0].text != 'Your subscriptions on Vimeo':
+  try:
+    xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
+    if xml.xpath('//title')[0].text != 'Your subscriptions on Vimeo':
+      logged_in = False
+    else:
+      logged_in = True
+  except:
+    logged_in = False
+
+  if logged_in == False:
     # See if we have any creds stored.
     if not Prefs['email'] and not Prefs['password']:
       return MessageContainer(header='Logging in', message='Please enter your email and password in the preferences.')
     # Try to log in
     Login()
-    Log(xml.xpath('//title')[0].text)
 
     # Now check to see if we're logged in.
     xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
@@ -281,7 +288,7 @@ def Search(query='dog', page=1):
   data = HTTP.Request(VIMEO_URL, cacheTime=0).content
 
   try:
-    vimeo_page = HTML.ElementFromString(data, cacheTime=0)
+    vimeo_page = HTML.ElementFromString(data)
     security_token = vimeo_page.xpath('//input[@id="xsrft"]')[0].get('value')[0:8]
   except:
     security_token = re.search("xsrft:(\s*)'(?P<xsrft>[^']+)'", data).group('xsrft')[0:8]
@@ -403,16 +410,22 @@ def GetThumb(url):
 ####################################################################################################
 def Login():
 
-  xsrft = HTML.ElementFromURL('https://secure.vimeo.com/log_in', cacheTime=0).xpath('//input[@id="xsrft"]')[0].get('value')
+  page = HTTP.Request('http://vimeo.com/log_in').content
+
+  try:
+    vimeo_page = HTML.ElementFromString(data)
+    security_token = vimeo_page.xpath('//input[@id="xsrft"]')[0].get('value')
+  except:
+    security_token = re.search("xsrft:(\s*)'(?P<xsrft>[^']+)'", page).group('xsrft')
 
   values = {
      'sign_in[email]' : Prefs['email'],
      'sign_in[password]' : Prefs['password'],
-     'token' : xsrft
+     'token' : security_token
   }
 
   headers = {
-     'Cookie' : 'xsrft=%s' % xsrft
+     'Cookie' : 'xsrft=%s' % security_token
   }
 
-  x = HTTP.Request('https://secure.vimeo.com/log_in', values, headers).content
+  x = HTTP.Request('http://vimeo.com/log_in', values, headers).content
