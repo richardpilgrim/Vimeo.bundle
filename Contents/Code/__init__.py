@@ -79,10 +79,10 @@ def GetMyStuff():
   # See if we need to log in.
   try:
     xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
-    if xml.xpath('//title')[0].text != 'Your subscriptions on Vimeo':
-      logged_in = False
-    else:
+    if xml.xpath('//title')[0].text == 'Your subscriptions on Vimeo':
       logged_in = True
+    else:
+      logged_in = False
   except:
     logged_in = False
 
@@ -94,8 +94,13 @@ def GetMyStuff():
     Login()
 
     # Now check to see if we're logged in.
-    xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
-    if xml.xpath('//title')[0].text != 'Your subscriptions on Vimeo':
+    try:
+      xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
+      if xml.xpath('//title')[0].text == 'Your subscriptions on Vimeo':
+        pass
+      else:
+        return MessageContainer(header='Error logging in', message='Check your email and password in the preferences.')
+    except:
       return MessageContainer(header='Error logging in', message='Check your email and password in the preferences.')
 
   user = xml.xpath('.//a[@class="label" and text()="Me"]')[0].get('href')[1:]
@@ -411,6 +416,7 @@ def GetThumb(url):
 def Login():
 
   page = HTTP.Request('http://vimeo.com/log_in', cacheTime=0).content
+  Log(page) # wtf? Without this Log() statement, the code below fails, because it can't find xsrft ?!?!?!
 
   try:
     vimeo_page = HTML.ElementFromString(data)
