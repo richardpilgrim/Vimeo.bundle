@@ -1,436 +1,253 @@
-import re, string
+VIMEO_NAMESPACE = {'atom':'http://www.w3.org/2005/Atom', 'media':'http://search.yahoo.com/mrss/'}
 
-VIMEO_NAMESPACE   = {'atom':'http://www.w3.org/2005/Atom', 'media':'http://search.yahoo.com/mrss/'}
-VIMEO_URL         = 'http://vimeo.com'
-VIMEO_LOAD_CLIP   = 'http://vimeo.com/moogaloop/load/clip:%s/local?param_md5=0&param_context_id=&param_force_embed=0&param_clip_id=3715286&param_show_portrait=0&param_multimoog=&param_server=vimeo.com&param_show_title=0&param_color=00ADEF&param_autoplay=0&param_show_byline=0&param_fullscreen=1&param_context=subscriptions|newest&param_force_info=undefined&context=subscriptions'
-VIMEO_PLAY_CLIP   = 'http://vimeo.com/moogaloop/play/clip:%s/%s/%s/?q=%s&type=local'
-VIMEO_DIRECTORY   = 'http://vimeo.com/%s/%s/page:%d'
-VIMEO_SEARCH      = 'http://vimeo.com/search/videos/search:%s/st/%s/page:%d/sort:plays/format:detail'
+VIMEO_URL = 'http://vimeo.com'
+VIMEO_SEARCH = '%s/search/sort:relevant/format:detail?q=%%s' % VIMEO_URL
+VIMEO_CATEGORIES = '%s/categories' % VIMEO_URL
+
+VIMEO_FEATURED_CHANNELS = '%s/channels/page:%%d/sort:subscribers' % VIMEO_URL
+
+VIMEO_CATEGORY_CHANNELS = '%s/categories/%%s/channels/page:%%d/sort:subscribers/format:detail' % VIMEO_URL
+VIMEO_CATEGORY_GROUPS = '%s/categories/%%s/groups/page:%%d/sort:members/format:detail' % VIMEO_URL
+
+VIMEO_CHANNEL = '%s/channels/%%s/videos/page:%%d/sort:preset/format:detail' % VIMEO_URL
+VIMEO_GROUP = '%s/groups/%%s/videos/page:%%d/sort:date/format:detail' % VIMEO_URL
 
 ICON = 'icon-default.png'
 ART = 'art-default.jpg'
 
+RE_MEDIA_CATEGORY = Regex('<media:category.+?<\/media:category>')
+RE_CONTROL_CHARS = Regex(u'[\u0000-\u001F]')
+RE_SUMMARY = Regex('(<p class="first">.*</p>)', Regex.DOTALL)
+
 ####################################################################################################
 def Start():
 
-  Plugin.AddPrefixHandler('/video/vimeo', MainMenu, 'Vimeo', ICON, ART)
-  Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
-  ObjectContainer.title1 = 'Vimeo'
-  ObjectContainer.content = ContainerContent.GenericVideos
-  ObjectContainer.art = R(ART)
-  DirectoryObject.thumb = R(ICON)
-  HTTP.CacheTime = 1800
-  HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20100101 Firefox/11.0'
+	Plugin.AddPrefixHandler('/video/vimeo', MainMenu, 'Vimeo', ICON, ART)
+	Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
+	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
+
+	ObjectContainer.art = R(ART)
+	ObjectContainer.title1 = 'Vimeo'
+	DirectoryObject.thumb = R(ICON)
+
+	HTTP.CacheTime = CACHE_1HOUR
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20100101 Firefox/12.0'
 
 ####################################################################################################
 def MainMenu():
 
-  oc = ObjectContainer(
-    objects = [
-      DirectoryObject(
-        key     = Callback(GetMyStuff),
-        title   = L('My Stuff')
-      ),
-      DirectoryObject(
-        key     = Callback(GetVideosRSS, url='/channels/staffpicks/videos/rss', title2='Staff Picks'),
-        title   = L('Staff Picks'),
-        thumb   = R('staffpicks.png')
-      ),
-      DirectoryObject(
-        key     = Callback(FeaturedChannels),
-        title   = L('Featured Channels'),
-        thumb   = R('featured.png')
-      ),
-      DirectoryObject(
-        key     = Callback(GetVideosRSS, url='/channels/hd/videos/rss', title2='High Def'),
-        title   = L('High Def'), 
-        thumb   = R('hd.png')
-      ),
-      DirectoryObject(
-        key     = Callback(Categories, noun='channels', url='all'),
-        title   = L('Channels'), 
-        thumb   = R('channels.png')
-      ),
-      DirectoryObject(
-        key     = Callback(Categories, noun='groups', url='all', sort='members'),
-        title   = L('Groups'), 
-        thumb   = R('groups.png')
-      ),
-      InputDirectoryObject(
-        key     = Callback(Search),
-        title   = L('Search'),
-        prompt  = L('Search for Videos'),
-        thumb   = S('search.png')
-      ),
-      PrefsObject(
-        title   = L('Preferences...'),
-        thumb   = R('prefs.png')
-      )
-    ]
-  )
+	oc = ObjectContainer(
+		objects = [
+#			DirectoryObject(
+#				key		= Callback(GetMyStuff),
+#				title	= L('My Stuff')
+#			),
+			DirectoryObject(
+				key		= Callback(GetVideos, title=L('Staff Picks'), directory_type='channels', id='staffpicks'),
+				title	= L('Staff Picks')
+			),
+			DirectoryObject(
+				key		= Callback(GetVideos, title=L('HD'), directory_type='channels', id='hd'),
+				title	= L('HD')
+			),
+			DirectoryObject(
+				key		= Callback(GetDirectory, title=L('Featured Channels'), directory_type='featured_channels'),
+				title	= L('Featured Channels')
+			),
+			DirectoryObject(
+				key		= Callback(Categories, title=L('Channels'), directory_type='channels'),
+				title	= L('Channels')
+			),
+			DirectoryObject(
+				key		= Callback(Categories, title=L('Groups'), directory_type='groups'),
+				title	= L('Groups')
+			),
+#			InputDirectoryObject(
+#				key		= Callback(Search),
+#				title	= L('Search'),
+#				prompt	= L('Search for Videos'),
+#				thumb	= S('search.png')
+#			),
+			PrefsObject(
+				title	= L('Preferences...'),
+				thumb	= R('prefs.png')
+			)
+		]
+	)
 
-  return oc
+	return oc
 
 ####################################################################################################
-def GetMyStuff():
+def Categories(title, directory_type):
 
-  oc = ObjectContainer(no_cache=True)
+	oc = ObjectContainer(title2=title, view_group='List')
 
-  # See if we need to log in.
-  try:
-    xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
-    if xml.xpath('//title')[0].text == 'Your subscriptions on Vimeo':
-      logged_in = True
-    else:
-      logged_in = False
-  except:
-    logged_in = False
+	for category in HTML.ElementFromURL(VIMEO_CATEGORIES).xpath('//ul[@id="categories"]/li/a'):
+		title = category.xpath('./h2/text()')[0]
+		category_id = category.get('href').rsplit('/',1)[1]
 
-  if logged_in == False:
-    # See if we have any creds stored.
-    if not Prefs['email'] and not Prefs['password']:
-      return MessageContainer(header='Logging in', message='Please enter your email and password in the preferences.')
-    # Try to log in
-    Login()
+		oc.add(DirectoryObject(
+			key = Callback(GetDirectory, title=title, directory_type=directory_type, category_id=category_id),
+			title = title
+		))
 
-    # Now check to see if we're logged in.
-    try:
-      xml = HTML.ElementFromURL(VIMEO_URL + '/subscriptions/channels/sort:name', cacheTime=0)
-      if xml.xpath('//title')[0].text == 'Your subscriptions on Vimeo':
-        pass
-      else:
-        return MessageContainer(header='Error logging in', message='Check your email and password in the preferences.')
-    except:
-      return MessageContainer(header='Error logging in', message='Check your email and password in the preferences.')
-
-  user = xml.xpath('.//a[@class="label" and text()="Me"]')[0].get('href')[1:]
-
-  oc.add(DirectoryObject(
-    key = Callback(GetVideosRSS, url='/'+user+'/videos/rss', title2=L('My Videos')),
-    title = 'My Videos'
-  ))
-
-  oc.add(DirectoryObject(
-    key = Callback(GetVideosRSS, url='/'+user+'/likes/rss', title2=L('My Likes')),
-    title = 'My Likes'
-  ))
-
-  oc.add(DirectoryObject(
-    key = Callback(GetDirectory, noun=user, url='groups', sort='name', narrow='joined'),
-    title = L('My Groups')
-  ))
-
-  oc.add(DirectoryObject(
-    key = Callback(GetDirectory, noun=user, url='channels', sort='name', narrow='subscribe'),
-    title = L('My Channels')
-  ))
-
-  oc.add(DirectoryObject(
-    key = Callback(GetContacts, url='/'+user+'/contacts', title2=L('My Contacts')),
-    title = L('My Contacts')
-  ))
-
-  oc.add(DirectoryObject(
-    key = Callback(GetMySubscriptions, url='/inbox/subscriptions', title2=L('My Subscriptions')),
-    title = L('My Subscriptions')
-  ))
-
-  return oc
+	return oc
 
 ####################################################################################################
-def GetMySubscriptions(url, title2=None):
+def GetDirectory(title, directory_type=None, category_id=None, page=1):
 
-  rss_url = HTML.ElementFromURL(VIMEO_URL + url).xpath('//link[@title="Your subscription videos"]')[0].get('href')
-  return GetVideosRSS(url=rss_url, title2=title2)
+	oc = ObjectContainer(title2=title, view_group='InfoList')
 
-####################################################################################################
-def GetContacts(url, title2=None):
+	if directory_type == 'channels':
+		url = VIMEO_CATEGORY_CHANNELS % (category_id, page)
+		type = directory_type
+	elif directory_type == 'groups':
+		url = VIMEO_CATEGORY_GROUPS % (category_id, page)
+		type = directory_type
+	elif directory_type == 'featured_channels':
+		url = VIMEO_FEATURED_CHANNELS % page
+		type = 'channels'
 
-  oc = ObjectContainer(title2=title2, view_group='InfoList')
+	html = HTML.ElementFromURL(url)
 
-  url += '/sort:name'
-  for contact in HTML.ElementFromURL(VIMEO_URL + url).xpath('//div[@class="contact"]'):
-    thumb = contact.find('img').get('src')
-    title = contact.xpath('./div[@class="deleter"]')[0].xpath('./span[@class="greyd"]')[0].text
+	for el in html.xpath('//ol[@id="browse_list"]/li'):
+		id = el.xpath('.//a')[0].get('href').rsplit('/',1)[1]
+		el_title = ''.join(el.xpath('.//p[@class="title"]//text()')).strip()
+		try: summary = el.xpath('.//p[@class="description"]/text()')[0].strip()
+		except: summary = ''
+		thumb = el.xpath('.//img')[0].get('src')
 
-    info = contact.xpath('./div/div[@class="info"]')[0]
-    try:
-      subtitle = info.xpath('./div[@class="location"]')[0].text + "\n"
-    except:
-      subtitle = ""
-    subtitle += info.xpath('./div[@class="date"]')[0].text
+		oc.add(DirectoryObject(
+			key = Callback(GetVideos, title=el_title, directory_type=type, id=id),
+			title = el_title,
+			summary = summary,
+			thumb = Resource.ContentsOfURLWithFallback(thumb, fallback='icon-default.png')
+		))
 
-    summary = '\n'
-    try:
-      summary += info.xpath('./a[@class="contacts"]')[0].text + ", "
-    except:
-      pass
+	if len(html.xpath('//a[@rel="next"]')) > 0:
+		oc.add(DirectoryObject(
+			key = Callback(GetDirectory, title=title, directory_type=directory_type, category_id=category_id, page=page+1),
+			title = L('More ...')
+		))
 
-    try:
-      summary += info.xpath('./a[@class="videos"]')[0].text
-      url = info.xpath('./a[@class="videos"]')[0].get('href') + '/rss'
-      oc.add(DirectoryObject(
-        key = Callback(GetVideosRSS, url=url, title2=title),
-        title = title,
-        tagline = subtitle,
-        thumb = Callback(GetThumb, url=thumb),
-        summary = summary,
-      ))
-    except:
-      # Doesn't have any videos for some reason... skip
-      pass
-
-  return oc
+	return oc
 
 ####################################################################################################
-def FeaturedChannels():
+def GetVideos(title, directory_type=None, id=None, page=1):
 
-  oc = ObjectContainer(title2=L('Featured Channels'), view_group='InfoList')
+	oc = ObjectContainer(title2=title, view_group='InfoList')
 
-  for c in HTML.ElementFromURL(VIMEO_URL + '/channels').xpath("//div[@class='badge']"):
-    title = c.find('a').get('title')
-    thumb = re.findall("'(.*)'", c.get('style'))[0]
-    url = c.find('a').get('href')
-    url = url[url.rfind('/')+1:]
+	if directory_type == 'channels':
+		url = VIMEO_CHANNEL % (id, page)
+	elif directory_type == 'groups':
+		url = VIMEO_GROUP % (id, page)
 
-    oc.add(DirectoryObject(
-      key = Callback(GetVideosRSS, url='/channels/'+url+'/videos/rss', title2=title),
-      title = title,
-      thumb = Callback(GetThumb, url=thumb)
-    ))
+	html = HTML.ElementFromURL(url)
 
-  return oc
+	for el in html.xpath('//ol[@id="browse_list"]/li'):
+		video_id = el.xpath('.//a')[0].get('href').rsplit('/',1)[1]
+		el_title = el.xpath('.//p[@class="title"]/a/text()')[0].strip()
+		summary = el.xpath('.//p[@class="description"]/text()')[0].strip()
+		duration = TimeToMs(el.xpath('.//div[@class="duration"]/text()')[0])
+		thumb = el.xpath('.//img')[0].get('src')
 
-####################################################################################################
-def Categories(noun, url, sort='subscribed'):
+		oc.add(VideoClipObject(
+			url = '%s/%s' % (VIMEO_URL, video_id),
+			title = el_title,
+			summary = summary,
+			duration = duration,
+			thumb = Resource.ContentsOfURLWithFallback(thumb, fallback='icon-default.png')
+		))
 
-  oc = ObjectContainer(title2=L('Channels'), view_group='InfoList')
+	if len(html.xpath('//a[@rel="next"]')) > 0:
+		oc.add(DirectoryObject(
+			key = Callback(GetVideos, title=title, directory_type=directory_type, id=id, page=page+1),
+			title = L('More ...')
+		))
 
-  for category in HTML.ElementFromURL(VIMEO_URL + '/channels').xpath('//div[@id="cloud"]/ul/li'):
-    title = string.capwords(category.find('a').text)
-    subtitle = category.find('span').text + ' ' + noun
-    cat = category.find('a').get('href')
-    cat = cat[cat.find(':')+1:]
-
-    oc.add(DirectoryObject(
-      key = Callback(GetDirectory, category=cat, noun=noun, url=url, sort=sort, title2=title),
-      title = title,
-      tagline = subtitle,
-    ))
-
-  return oc
-
-####################################################################################################
-def GetDirectory(category=None, noun=None, url=None, page=1, sort='subscribed', narrow=None, title2=None):
-
-  oc = ObjectContainer(title2=title2, view_group='InfoList', replace_parent=(page > 1))
-
-  the_url = VIMEO_DIRECTORY % (noun, url, page)
-  if category is not None:
-    the_url += '/category:%s' % category
-  if sort is not None:
-    the_url += '/sort:%s' % sort
-  if narrow is not None:
-    the_url += '/narrow:%s' % narrow
-
-  if url == 'channels' and narrow is not None:
-    xpath = '//ul[@id="channel_listing"]/li'
-    xp_title = './div[@class="digest"]/div[@class="channel_title"]/a'
-    xp_subtitle = './div[@class="digest"]/div[@class="counts"]'
-    xp_desc = './div[@class="digest"]/div[@class="descrip"]'
-    full_subtitle = True
-    noun = 'channels'
-    sort = 'newest'
-  elif url == 'groups' and narrow is not None:
-    xpath = '//ul[@id="group_listing"]/li'
-    xp_title = './div[@class="digest"]/div[@class="group_title"]/a'
-    xp_subtitle = './div[@class="digest"]/div[@class="counts"]'
-    xp_desc = './div[@class="digest"]/div[@class="descrip"]'
-    full_subtitle = True
-    noun = 'groups'
-  else:
-    xpath = '//div[@class="item last"]'
-    xp_title= './div/div[@class="title"]/a'
-    xp_subtitle = './div/div[@class="date"]'
-    xp_desc = './div/div[@class="description"]'
-    full_subtitle = False
-
-  for channel in HTML.ElementFromURL(the_url).xpath(xpath):
-    title = channel.xpath(xp_title)[0].text
-    subtitle_items = [e for e in channel.xpath(xp_subtitle)[0].itertext()]
-    subtitle = "".join(subtitle_items[0:1]).strip()
-    if len(subtitle) == 0 or full_subtitle == True:
-      subtitle = "".join(subtitle_items).strip()
-    try: desc = channel.xpath(xp_desc)[0].text
-    except: desc =''
-    link = channel.xpath('./div[@class="channel_thumb"]/a')[0]
-    thumb = link.find('img').get('src')
-    channel = link.get('href')
-    channel = channel[channel.rfind('/')+1:]
-    
-    oc.add(DirectoryObject(
-      key = Callback(GetVideosRSS, url='/'+noun+'/'+channel+'/videos/rss', title2=title),
-      title = title,
-      tagline = subtitle,
-      summary = desc,
-      thumb = Callback(GetThumb, url=thumb)
-    ))
-
-  oc.add(DirectoryObject(
-    key = Callback(GetDirectory, category=category, noun=noun, url=url, sort=sort, narrow=narrow, page=page+1, title2=title2),
-    title = L('More...'),
-  ))
-
-  return oc
-
-####################################################################################################
-def Search(query='dog', page=1):
-
-  oc = ObjectContainer(title2=L('Search Results'), view_group='InfoList', replace_parent=(page > 1))
-  query = query.replace(' ', '+')
-  
-  # Need to get the security token.
-  data = HTTP.Request(VIMEO_URL, cacheTime=0).content
-
-  try:
-    vimeo_page = HTML.ElementFromString(data)
-    security_token = vimeo_page.xpath('//input[@id="xsrft"]')[0].get('value')[0:8]
-  except:
-    security_token = re.search("xsrft:(\s*)'(?P<xsrft>[^']+)'", data).group('xsrft')[0:8]
-
-  vimeo_html = HTTP.Request(VIMEO_SEARCH % (query, security_token, page), headers={"Cookie" : "searchtoken="+security_token}).content
-
-  for result in HTML.ElementFromString(vimeo_html).xpath('//div[@class="item last"]'):
-    title = result.xpath('./div/div[@class="title"]/a')[0].text
-    subtitle_items = [e.strip() for e in result.xpath('./div/div[@class="date"]')[0].itertext()]
-    subtitle = "%s (%s plays)" % (subtitle_items[0], subtitle_items[2])
-    try: desc = result.xpath('./div/div[@class="description"]')[0].text
-    except: desc =''
-    try:
-        link = result.xpath('./div[@class="thumbnail_box"]/a[@class="thumbnail"]')[0]
-        thumb = link.find('img').get('src')
-        url = 'http://vimeo.com' + link.get('href')
-    except:
-        PMS.Log(XML.StringFromElement(result))
-        continue
-    #
-    oc.add(VideoClipObject(
-      title = title,
-      tagline = subtitle,
-      summary = desc,
-      thumb = Callback(GetThumb, url=thumb),
-      url = url
-    ))
-    
-  oc.add(DirectoryObject(
-    key = Callback(Search, query=query, page=page+1),
-    title = L('More...')
-  ))
-  return oc
+	return oc
 
 ####################################################################################################
 def GetVideosRSS(url, title2):
 
-  oc = ObjectContainer(title2=title2, view_group='InfoList')
+	oc = ObjectContainer(title2=title2, view_group='InfoList')
 
-  if url.find(VIMEO_URL) == -1:
-    url = VIMEO_URL + url
+	if url.find(VIMEO_URL) == -1:
+		url = VIMEO_URL + url
 
-  # Deal with non utf-8 character problem by removing the <media:category> element before parsing the document as XML
-  xml = HTTP.Request(url).content
-  xml = re.sub('<media:category.+?<\/media:category>', '', xml)
+	# Deal with non utf-8 character problem by removing the <media:category> element before parsing the document as XML
+	xml = HTTP.Request(url).content
+	xml = RE_MEDIA_CATEGORY.sub('', xml)
 
-  # Remove any control characters, yucky fix :|
-  # http://stackoverflow.com/questions/3748855/how-do-i-specify-a-range-of-unicode-characters-in-a-regular-expression-in-python
-  # http://www.unicode.org/charts/PDF/U0000.pdf
-  xml = re.sub(u'[\u0000-\u001F]', '', xml)
+	# Remove any control characters, yucky fix :|
+	# http://stackoverflow.com/questions/3748855/how-do-i-specify-a-range-of-unicode-characters-in-a-regular-expression-in-python
+	# http://www.unicode.org/charts/PDF/U0000.pdf
+	xml = RE_CONTROL_CHARS.sub('', xml)
 
-  resultDict = {}
+	results = {}
 
-  @parallelize
-  def GetVideos():
-    videos = XML.ElementFromString(xml).xpath('//item')
+	@parallelize
+	def GetVideos():
+		videos = XML.ElementFromString(xml).xpath('//item')
 
-    for num in range(len(videos)):
-      video = videos[num]
+		for num in range(len(videos)):
+			video = videos[num]
 
-      @task
-      def GetVideo(num=num, resultDict=resultDict, video=video):
-        title = video.xpath('./title')[0].text.strip()
-        date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).date()
+			@task
+			def GetVideo(num=num, video=video, results=results):
+				title = video.xpath('./title')[0].text.strip()
+				date = Datetime.ParseDate(video.xpath('./pubDate')[0].text).date()
 
-        try:
-          summary = video.xpath('./description')[0].text.replace('\n', '').replace('<br>', '<br />')
-          summary = re.search('(<p class="first">.*</p>)', summary, re.DOTALL).group(1)
-          summary = summary.split('<strong>')[0]
-          summary = HTML.ElementFromString(summary).xpath('//text()')
-          summary = '\n'.join(summary)
-        except:
-          summary = ''
+				try:
+					summary = video.xpath('./description')[0].text.replace('\n', '').replace('<br>', '<br />')
+					summary = RE_SUMMARY.search(summary).group(1)
+					summary = summary.split('<strong>')[0]
+					summary = HTML.ElementFromString(summary).xpath('//text()')
+					summary = '\n'.join(summary)
+				except:
+					summary = ''
 
-        try:
-          thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url').replace('_200.jpg', '_640.jpg')
-        except:
-          thumb = None
+				try:
+					thumb = video.xpath('./media:content/media:thumbnail', namespaces=VIMEO_NAMESPACE)[0].get('url').replace('_200.jpg', '_640.jpg')
+				except:
+					thumb = None
 
-        try:
-          key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
-          key = key[key.rfind('=')+1:]
-          url = 'http://vimeo.com/%s' % key
+				try:
+					key = video.xpath('./media:content/media:player', namespaces=VIMEO_NAMESPACE)[0].get('url')
+					key = key[key.rfind('=')+1:]
+					url = 'http://vimeo.com/%s' % key
 
-          if 'video' in JSON.ObjectFromURL('http://player.vimeo.com/config/%s' % key, cacheTime=CACHE_1DAY):
-            resultDict[num] = VideoClipObject(
-              title = title,
-              summary = summary,
-              thumb = Callback(GetThumb, url=thumb),
-              originally_available_at = date,
-              url = url
-            )
-          else:
-            Log('Video is private: %s - http://vimeo.com/%s' % (title, key))
+					if 'video' in JSON.ObjectFromURL('http://player.vimeo.com/config/%s' % key, cacheTime=CACHE_1WEEK):
+						results[num] = VideoClipObject(
+							title = title,
+							summary = summary,
+							thumb = Resource.ContentsOfURLWithFallback(thumb, fallback='icon-default.png'),
+							originally_available_at = date,
+							url = url
+						)
+					else:
+						Log('Video is private: %s - http://vimeo.com/%s' % (title, key))
 
-        except:
-          Log('Failed to load video: %s' % title)
-          pass
+				except:
+					Log('Failed to load video: %s' % title)
+					pass
 
-  keys = resultDict.keys()
-  keys.sort()
-  for key in keys:
-    oc.add(resultDict[key])
+	keys = results.keys()
+	keys.sort()
 
-  return oc
+	for key in keys:
+		oc.add(results[key])
 
-####################################################################################################
-def GetThumb(url):
-
-  if url:
-    try:
-      data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
-      return DataObject(data, 'image/jpeg')
-    except:
-      pass
-
-  return Redirect(R(ICON))
+	return oc
 
 ####################################################################################################
-def Login():
+def TimeToMs(timecode):
 
-  data = HTTP.Request('http://vimeo.com/log_in', cacheTime=0).content
+	seconds = 0
+	duration = timecode.split(':')
+	duration.reverse()
 
-  try:
-    vimeo_page = HTML.ElementFromString(data)
-    security_token = vimeo_page.xpath('//input[@id="xsrft"]')[0].get('value')
-  except:
-    security_token = re.search("xsrft:(\s*)'(?P<xsrft>[^']+)'", data).group('xsrft')
+	for i in range(0, len(duration)):
+		seconds += int(duration[i]) * (60**i)
 
-  values = {
-     'sign_in[email]' : Prefs['email'],
-     'sign_in[password]' : Prefs['password'],
-     'token' : security_token
-  }
-
-  headers = {
-     'Cookie' : 'xsrft=%s' % security_token
-  }
-
-  x = HTTP.Request('http://vimeo.com/log_in', values, headers).content
+	return seconds * 1000
