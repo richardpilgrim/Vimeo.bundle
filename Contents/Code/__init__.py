@@ -162,7 +162,7 @@ def GetVideos(title, url, page=1):
 	html = HTML.ElementFromURL(url % page)
 
 	for video in html.xpath('//ol[@id="browse_list"]/li'):
-		if len(video.xpath('.//div[contains(@class, "private")]')) > 0:
+		if len(video.xpath('.//div[contains(@class, "private")]')) > 0 or len(video.xpath('.//span[@class="processing"]')) > 0:
 			continue
 
 		video_id = video.xpath('.//a')[0].get('href').rsplit('/',1)[1]
