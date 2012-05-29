@@ -287,7 +287,6 @@ def GetMyStuff(title):
 	oc = ObjectContainer(
 		title2 = title,
 		view_group = 'List',
-		no_cache = True,
 		objects = [
 			DirectoryObject(
 				key		= Callback(GetVideos, title=L('My Videos'), url=VIMEO_MY_VIDEOS % user),
