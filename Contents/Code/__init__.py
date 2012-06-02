@@ -122,7 +122,12 @@ def GetDirectory(title, url, page=1):
 	html = HTML.ElementFromURL(url % page, cacheTime=0)
 
 	for el in html.xpath('//ol[@id="browse_list"]/li'):
-		el_url = el.xpath('.//a')[0].get('href')
+
+		# It appears that some items can be removed and replaced with a placeholder. If this is the
+		# case, it will not have an <a> node and therefore we should ignore it an move on.
+		try: el_url = el.xpath('.//a')[0].get('href')
+		except: continue
+
 		(junk, directory_type, el_id) = el_url.split('/')
 
 		if directory_type == 'channels':
