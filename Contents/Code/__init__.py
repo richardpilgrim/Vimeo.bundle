@@ -119,7 +119,7 @@ def Categories(title, directory_type):
 def GetDirectory(title, url, page=1):
 
 	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
-	html = HTML.ElementFromURL(url % page, cacheTime=0)
+	html = HTML.ElementFromURL(url % page)
 
 	for el in html.xpath('//ol[@id="browse_list"]/li'):
 
@@ -157,14 +157,14 @@ def GetDirectory(title, url, page=1):
 	return oc
 
 ####################################################################################################
-def GetVideos(title, url, page=1):
+def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 
 	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
 
 	if not url.startswith('http'):
 		url = '%s/%s' % (VIMEO_URL, url)
 
-	html = HTML.ElementFromURL(url % page)
+	html = HTML.ElementFromURL(url % page, cacheTime=cacheTime)
 
 	for video in html.xpath('//ol[@id="browse_list"]/li'):
 		if len(video.xpath('.//div[contains(@class, "private")]')) > 0 or len(video.xpath('.//span[@class="processing"]')) > 0:
@@ -186,7 +186,7 @@ def GetVideos(title, url, page=1):
 
 	if len(html.xpath('//a[@rel="next"]')) > 0:
 		oc.add(DirectoryObject(
-			key = Callback(GetVideos, title=title, url=url, page=page+1),
+			key = Callback(GetVideos, title=title, url=url, page=page+1, cacheTime=cacheTime),
 			title = L('More...')
 		))
 
@@ -294,11 +294,11 @@ def GetMyStuff(title):
 		view_group = 'List',
 		objects = [
 			DirectoryObject(
-				key		= Callback(GetVideos, title=L('My Videos'), url=VIMEO_MY_VIDEOS % user),
+				key		= Callback(GetVideos, title=L('My Videos'), url=VIMEO_MY_VIDEOS % user, cacheTime=300),
 				title	= L('My Videos')
 			),
 			DirectoryObject(
-				key		= Callback(GetVideos, title=L('My Likes'), url=VIMEO_MY_LIKES % user),
+				key		= Callback(GetVideos, title=L('My Likes'), url=VIMEO_MY_LIKES % user, cacheTime=300),
 				title	= L('My Likes')
 			),
 			DirectoryObject(
@@ -310,7 +310,7 @@ def GetMyStuff(title):
 				title	= L('My Groups')
 			),
 			DirectoryObject(
-				key		= Callback(GetVideos, title=L('Watch Later'), url=VIMEO_WATCH_LATER),
+				key		= Callback(GetVideos, title=L('Watch Later'), url=VIMEO_WATCH_LATER, cacheTime=300),
 				title	= L('Watch Later')
 			),
 			DirectoryObject(
