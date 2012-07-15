@@ -170,14 +170,23 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 		if len(video.xpath('.//div[contains(@class, "private")]')) > 0 or len(video.xpath('.//span[@class="processing"]')) > 0:
 			continue
 
+ 		# It appears that some videos are still actually 'private' or only available if the user
+ 		# has authenticated. The easiest, but slightly hacky way, is to simply perform a HEAD
+ 		# request and see if it succeeds. In the case that the video is private and the user is
+ 		# not authenticated, it will return a 404 and we'll simply skip the video.
 		video_id = video.xpath('.//a')[0].get('href').rsplit('/',1)[1]
+		url = '%s/%s' % (VIMEO_URL, video_id)
+		try:
+			HTTP.Request(url).headers
+		except: continue
+
 		video_title = video.xpath('.//p[@class="title"]/a/text()')[0].strip()
 		video_summary = video.xpath('.//p[@class="description"]/text()')[0].strip()
 		video_duration = TimeToMs(video.xpath('.//div[@class="duration"]/text()')[0])
 		video_thumb = video.xpath('.//img')[0].get('src').replace('_150.jpg', '_640.jpg')
 
 		oc.add(VideoClipObject(
-			url = '%s/%s' % (VIMEO_URL, video_id),
+			url = url,
 			title = video_title,
 			summary = video_summary,
 			duration = video_duration,
