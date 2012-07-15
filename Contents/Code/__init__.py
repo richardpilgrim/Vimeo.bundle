@@ -165,33 +165,49 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 		url = '%s/%s' % (VIMEO_URL, url)
 
 	html = HTML.ElementFromURL(url % page, cacheTime=cacheTime)
+	results = {}
 
-	for video in html.xpath('//ol[@id="browse_list"]/li'):
-		if len(video.xpath('.//div[contains(@class, "private")]')) > 0 or len(video.xpath('.//span[@class="processing"]')) > 0:
-			continue
+	@parallelize
+	def GetAllVideos():
+		videos = html.xpath('//ol[@id="browse_list"]/li')
 
- 		# It appears that some videos are still actually 'private' or only available if the user
- 		# has authenticated. The easiest, but slightly hacky way, is to simply perform a HEAD
- 		# request and see if it succeeds. In the case that the video is private and the user is
- 		# not authenticated, it will return a 404 and we'll simply skip the video.
-		video_id = video.xpath('.//a')[0].get('href').rsplit('/',1)[1]
-		url = '%s/%s' % (VIMEO_URL, video_id)
-		try:
-			HTTP.Request(url).headers
-		except: continue
+		for num in range(len(videos)):
+			video = videos[num]
 
-		video_title = video.xpath('.//p[@class="title"]/a/text()')[0].strip()
-		video_summary = video.xpath('.//p[@class="description"]/text()')[0].strip()
-		video_duration = TimeToMs(video.xpath('.//div[@class="duration"]/text()')[0])
-		video_thumb = video.xpath('.//img')[0].get('src').replace('_150.jpg', '_640.jpg')
+			@task
+			def GetVideo(num=num, video=video, results=results):
+				if len(video.xpath('.//div[contains(@class, "private")]')) > 0 or len(video.xpath('.//span[@class="processing"]')) > 0:
+					return
 
-		oc.add(VideoClipObject(
-			url = url,
-			title = video_title,
-			summary = video_summary,
-			duration = video_duration,
-			thumb = Resource.ContentsOfURLWithFallback(video_thumb, fallback='icon-default.png')
-		))
+				# It appears that some videos are still actually 'private' or only available if the user
+				# has authenticated. The easiest, but slightly hacky way, is to simply perform a HEAD
+				# request and see if it succeeds. In the case that the video is private and the user is
+				# not authenticated, it will return a 404 and we'll simply skip the video.
+				video_id = video.xpath('.//a')[0].get('href').rsplit('/',1)[1]
+				url = '%s/%s' % (VIMEO_URL, video_id)
+				try:
+					HTTP.Request(url).headers
+				except:
+					return
+
+				video_title = video.xpath('.//p[@class="title"]/a/text()')[0].strip()
+				video_summary = video.xpath('.//p[@class="description"]/text()')[0].strip()
+				video_duration = TimeToMs(video.xpath('.//div[@class="duration"]/text()')[0])
+				video_thumb = video.xpath('.//img')[0].get('src').replace('_150.jpg', '_640.jpg')
+
+				results[num] = VideoClipObject(
+					url = url,
+					title = video_title,
+					summary = video_summary,
+					duration = video_duration,
+					thumb = Resource.ContentsOfURLWithFallback(video_thumb, fallback='icon-default.png')
+				)
+
+	keys = results.keys()
+	keys.sort()
+
+	for key in keys:
+		oc.add(results[key])
 
 	if len(html.xpath('//a[@rel="next"]')) > 0:
 		oc.add(DirectoryObject(
@@ -221,7 +237,7 @@ def GetVideosRSS(url, title):
 	results = {}
 
 	@parallelize
-	def GetVideos():
+	def GetAllVideos():
 		videos = XML.ElementFromString(xml).xpath('//item')
 
 		for num in range(len(videos)):
