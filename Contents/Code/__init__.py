@@ -179,29 +179,31 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 				if len(video.xpath('.//div[contains(@class, "private")]')) > 0 or len(video.xpath('.//span[@class="processing"]')) > 0:
 					return
 
-				# It appears that some videos are still actually 'private' or only available if the user
-				# has authenticated. The easiest, but slightly hacky way, is to simply perform a HEAD
-				# request and see if it succeeds. In the case that the video is private and the user is
-				# not authenticated, it will return a 404 and we'll simply skip the video.
+				# It appears that some videos are still actually 'private' or only available if the user has authenticated. The easiest, 
+				# but slightly hacky way, is to simply grab the actual page and see whats there. We're normally only handling a 'few' pages
+				# so this shouldn't take too long. Although, i'm not that pleased that we have to do it :(
 				video_id = video.xpath('.//a')[0].get('href').rsplit('/',1)[1]
 				url = '%s/%s' % (VIMEO_URL, video_id)
 				try:
-					HTTP.Request(url).headers
+					page = HTML.ElementFromURL(url)
+					if len(page.xpath('//header[@id = "page_header"]//h1[contains(text(), "Private Video")]')) > 0:
+						return
+
+					video_title = page.xpath('//meta[@property = "og:title"]')[0].get('content').strip()
+					video_summary = page.xpath('//meta[@property = "og:description"]')[0].get('content').strip()
+					video_duration = TimeToMs(video.xpath('.//div[@class="duration"]/text()')[0])
+					video_thumb = page.xpath('//meta[@property = "og:image"]')[0].get('content').strip()
+
+					results[num] = VideoClipObject(
+						url = url,
+						title = video_title,
+						summary = video_summary,
+						duration = video_duration,
+						thumb = Resource.ContentsOfURLWithFallback(video_thumb, fallback='icon-default.png')
+					)
+
 				except:
 					return
-
-				video_title = video.xpath('.//p[@class="title"]/a/text()')[0].strip()
-				video_summary = video.xpath('.//p[@class="description"]/text()')[0].strip()
-				video_duration = TimeToMs(video.xpath('.//div[@class="duration"]/text()')[0])
-				video_thumb = video.xpath('.//img')[0].get('src').replace('_150.jpg', '_640.jpg')
-
-				results[num] = VideoClipObject(
-					url = url,
-					title = video_title,
-					summary = video_summary,
-					duration = video_duration,
-					thumb = Resource.ContentsOfURLWithFallback(video_thumb, fallback='icon-default.png')
-				)
 
 	keys = results.keys()
 	keys.sort()
