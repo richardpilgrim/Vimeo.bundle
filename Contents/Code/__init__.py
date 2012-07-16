@@ -184,8 +184,10 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 				# so this shouldn't take too long. Although, i'm not that pleased that we have to do it :(
 				video_id = video.xpath('.//a')[0].get('href').rsplit('/',1)[1]
 				url = '%s/%s' % (VIMEO_URL, video_id)
+
 				try:
-					page = HTML.ElementFromURL(url)
+					page = HTML.ElementFromURL(url, cacheTime=CACHE_1WEEK)
+
 					if len(page.xpath('//header[@id = "page_header"]//h1[contains(text(), "Private Video")]')) > 0:
 						return
 
