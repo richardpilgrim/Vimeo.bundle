@@ -154,6 +154,10 @@ def GetDirectory(title, url, page=1):
 			title = L('More...')
 		))
 
+	# It appears that sometimes we expect another page, but there ends up being no valid videos available
+	if len(oc) == 0 and page > 1:
+		return ObjectContainer(header = "No More Videos", message = "No more videos are available...")
+
 	return oc
 
 ####################################################################################################
@@ -216,6 +220,10 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 			key = Callback(GetVideos, title=title, url=url, page=page+1, cacheTime=cacheTime),
 			title = L('More...')
 		))
+
+	# It appears that sometimes we expect another page, but there ends up being no valid videos available
+	if len(oc) == 0 and page > 1:
+		return ObjectContainer(header = "No More Videos", message = "No more videos are available...")
 
 	return oc
 
