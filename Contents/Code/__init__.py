@@ -195,10 +195,10 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 					if len(page.xpath('//header[@id = "page_header"]//h1[contains(text(), "Private Video")]')) > 0:
 						return
 
-					video_title = page.xpath('//meta[@property = "og:title"]')[0].get('content').strip()
-					video_summary = page.xpath('//meta[@property = "og:description"]')[0].get('content').strip()
+					video_title = video.xpath('.//p[@class="title"]/a/text()')[0].strip()
+					video_summary = video.xpath('.//p[@class="description"]/text()')[0].strip()
 					video_duration = TimeToMs(video.xpath('.//div[@class="duration"]/text()')[0])
-					video_thumb = page.xpath('//meta[@property = "og:image"]')[0].get('content').strip()
+					video_thumb = video.xpath('.//img')[0].get('src').replace('_150.jpg', '_640.jpg')
 
 					results[num] = VideoClipObject(
 						url = url,
