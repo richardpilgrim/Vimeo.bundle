@@ -364,7 +364,7 @@ def LoggedIn():
 
 	html = HTML.ElementFromURL(VIMEO_URL, cacheTime=0)
 
-	if len(html.xpath('//a[contains(@href, "/log_in")]')) == 0:
+	if len(html.xpath('//a[contains(@href, "/log_out")]')) > 0:
 		Log(' --> User is logged in')
 		return True
 
@@ -378,6 +378,8 @@ def Login():
 	token = RE_TOKEN.search(html).group('xsrft')
 
 	post = {
+		'action': 'login',
+		'service': 'vimeo',
 		'email': Prefs['email'],
 		'password': Prefs['password'],
 		'token': token
