@@ -1,7 +1,7 @@
-VIMEO_NAMESPACE = {'atom':'http://www.w3.org/2005/Atom', 'media':'http://search.yahoo.com/mrss/'}
+VIMEO_NAMESPACE = {'media':'http://search.yahoo.com/mrss/'}
 
 VIMEO_URL = 'http://vimeo.com'
-VIMEO_SEARCH = '%s/search/page:%%d/sort:relevant/format:detail?q=%%s' % VIMEO_URL
+#VIMEO_SEARCH = '%s/search/page:%%d/sort:relevant/format:detail?q=%%s' % VIMEO_URL
 VIMEO_CATEGORIES = '%s/categories' % VIMEO_URL
 
 VIMEO_FEATURED_CHANNELS = '%s/channels/page:%%d/sort:subscribers' % VIMEO_URL
@@ -34,7 +34,6 @@ RE_SUMMARY = Regex('(<p class="first">.*</p>)', Regex.DOTALL)
 ####################################################################################################
 def Start():
 
-	Plugin.AddPrefixHandler('/video/vimeo', MainMenu, 'Vimeo', ICON, ART)
 	Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
 
@@ -43,9 +42,10 @@ def Start():
 	DirectoryObject.thumb = R(ICON)
 
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20100101 Firefox/12.0'
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20100101 Firefox/15.0.1'
 
 ####################################################################################################
+@handler('/video/vimeo', 'Vimeo', thumb=ICON, art=ART)
 def MainMenu():
 
 	oc = ObjectContainer(
@@ -95,6 +95,7 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
+@route('/video/vimeo/{directory_type}/categories')
 def Categories(title, directory_type):
 
 	oc = ObjectContainer(title2=title, view_group='List')
@@ -116,9 +117,11 @@ def Categories(title, directory_type):
 	return oc
 
 ####################################################################################################
+@route('/video/vimeo/directory', page=int)
 def GetDirectory(title, url, page=1):
 
-	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
+#	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
+	oc = ObjectContainer(title2=title, view_group='InfoList')
 	html = HTML.ElementFromURL(url % page)
 
 	for el in html.xpath('//ol[@id="browse_list"]/li'):
@@ -149,7 +152,7 @@ def GetDirectory(title, url, page=1):
 		))
 
 	if len(html.xpath('//a[@rel="next"]')) > 0:
-		oc.add(DirectoryObject(
+		oc.add(NextPageObject(
 			key = Callback(GetDirectory, title=title, url=url, page=page+1),
 			title = L('More...')
 		))
@@ -161,9 +164,11 @@ def GetDirectory(title, url, page=1):
 	return oc
 
 ####################################################################################################
+@route('/video/vimeo/videos', page=int, cacheTime=int, allow_sync=True)
 def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 
-	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
+#	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
+	oc = ObjectContainer(title2=title, view_group='InfoList')
 
 	if not url.startswith('http'):
 		url = '%s/%s' % (VIMEO_URL, url)
@@ -218,7 +223,7 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 		oc.add(results[key])
 
 	if len(html.xpath('//a[@rel="next"]')) > 0:
-		oc.add(DirectoryObject(
+		oc.add(NextPageObject(
 			key = Callback(GetVideos, title=title, url=url, page=page+1, cacheTime=cacheTime),
 			title = L('More...')
 		))
@@ -230,6 +235,7 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 	return oc
 
 ####################################################################################################
+@route('/video/vimeo/videos/rss')
 def GetVideosRSS(url, title):
 
 	oc = ObjectContainer(title2=title, view_group='InfoList')
@@ -303,12 +309,14 @@ def GetVideosRSS(url, title):
 	return oc
 
 ####################################################################################################
+@route('/video/vimeo/videos/my_subscriptions', allow_sync=True)
 def GetMySubscriptions(title):
 
 	rss_url = HTML.ElementFromURL(VIMEO_URL).xpath('//a[contains(@title, "My Subscriptions RSS")]')[0].get('href')
 	return GetVideosRSS(url=rss_url, title=title)
 
 ####################################################################################################
+@route('/video/vimeo/my_stuff')
 def GetMyStuff(title):
 
 	# See if we need to log in
@@ -396,6 +404,7 @@ def GetUsername():
 
 	html = HTML.ElementFromURL(VIMEO_URL)
 	username = html.xpath('//a[text()="Me"]')[0].get('href').split('/')[1]
+
 	return username
 
 ####################################################################################################
