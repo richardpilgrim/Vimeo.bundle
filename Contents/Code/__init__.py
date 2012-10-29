@@ -40,6 +40,7 @@ def Start():
 	ObjectContainer.art = R(ART)
 	ObjectContainer.title1 = 'Vimeo'
 	DirectoryObject.thumb = R(ICON)
+	NextPageObject.thumb = R(ICON)
 
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20100101 Firefox/15.0.1'
