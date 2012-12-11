@@ -324,14 +324,14 @@ def GetMyStuff(title):
 	if not LoggedIn():
 		# See if we have any creds stored
 		if not Prefs['email'] or not Prefs['password']:
-			return MessageContainer(header=L('Logging in'), message=L('Please enter your email and password in the preferences.'))
+			return ObjectContainer(header=L('Logging in'), message=L('Please enter your email and password in the preferences.'))
 
 		# Try to log in
 		Login()
 
 		# Now check to see if we're logged in
 		if not LoggedIn():
-			return MessageContainer(header=L('Error logging in'), message=L('Check your email and password in the preferences.'))
+			return ObjectContainer(header=L('Error logging in'), message=L('Check your email and password in the preferences.'))
 
 	user = GetUsername()
 
