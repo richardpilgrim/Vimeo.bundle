@@ -20,9 +20,6 @@ VIMEO_MY_GROUPS = '%s/%%s/groups/page:%%%%d/sort:alphabetical/format:detail' % V
 VIMEO_FOLLOWING = '%s/%%s/following/page:%%%%d/sort:alphabetical/format:detail' % VIMEO_URL
 VIMEO_WATCH_LATER = '%s/home/watchlater/page:%%d/sort:date/format:detail' % VIMEO_URL
 
-ICON = 'icon-default.png'
-ART = 'art-default.jpg'
-
 # Site
 RE_TOKEN = Regex("xsrft:(\s*)'(?P<xsrft>[^']+)'")
 
@@ -37,16 +34,13 @@ def Start():
 	Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
 	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
 
-	ObjectContainer.art = R(ART)
 	ObjectContainer.title1 = 'Vimeo'
-	DirectoryObject.thumb = R(ICON)
-	NextPageObject.thumb = R(ICON)
-
+	
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20100101 Firefox/15.0.1'
 
 ####################################################################################################
-@handler('/video/vimeo', 'Vimeo', thumb=ICON, art=ART)
+@handler('/video/vimeo', 'Vimeo')
 def MainMenu():
 
 	oc = ObjectContainer(
@@ -88,7 +82,6 @@ def MainMenu():
 #			),
 			PrefsObject(
 				title	= L('Preferences...'),
-				thumb	= R('icon-prefs.png')
 			)
 		]
 	)
