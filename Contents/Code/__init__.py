@@ -72,8 +72,7 @@ def MainMenu():
 #			InputDirectoryObject(
 #				key		= Callback(Search),
 #				title	= L('Search'),
-#				prompt	= L('Search for Videos'),
-#				thumb	= S('search.png')
+#				prompt	= L('Search for Videos')
 #			),
 			PrefsObject(
 				title	= L('Preferences...'),
@@ -136,7 +135,7 @@ def GetDirectory(title, url, page=1):
 			key = Callback(GetVideos, title=el_title, url=el_url),
 			title = el_title,
 			summary = el_summary,
-			thumb = Resource.ContentsOfURLWithFallback(el_thumb, fallback='icon-default.png')
+			thumb = Resource.ContentsOfURLWithFallback(el_thumb)
 		))
 
 	if len(html.xpath('//a[@rel="next"]')) > 0:
@@ -197,7 +196,7 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 						title = video_title,
 						summary = video_summary,
 						duration = video_duration,
-						thumb = Resource.ContentsOfURLWithFallback(video_thumb, fallback='icon-default.png')
+						thumb = Resource.ContentsOfURLWithFallback(video_thumb)
 					)
 
 				except:
@@ -276,7 +275,7 @@ def GetVideosRSS(url, title):
 						results[num] = VideoClipObject(
 							title = title,
 							summary = summary,
-							thumb = Resource.ContentsOfURLWithFallback(thumb, fallback='icon-default.png'),
+							thumb = Resource.ContentsOfURLWithFallback(thumb),
 							originally_available_at = date,
 							url = url
 						)
