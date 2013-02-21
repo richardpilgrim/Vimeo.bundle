@@ -31,11 +31,7 @@ RE_SUMMARY = Regex('(<p class="first">.*</p>)', Regex.DOTALL)
 ####################################################################################################
 def Start():
 
-	Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
-	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
-
 	ObjectContainer.title1 = 'Vimeo'
-	
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20100101 Firefox/15.0.1'
 
@@ -44,7 +40,6 @@ def Start():
 def MainMenu():
 
 	oc = ObjectContainer(
-		view_group = 'InfoList',
 		objects = [
 			DirectoryObject(
 				key		= Callback(GetMyStuff, title=L('My Stuff')),
@@ -92,7 +87,7 @@ def MainMenu():
 @route('/video/vimeo/{directory_type}/categories')
 def Categories(title, directory_type):
 
-	oc = ObjectContainer(title2=title, view_group='List')
+	oc = ObjectContainer(title2=title)
 
 	for category in HTML.ElementFromURL(VIMEO_CATEGORIES).xpath('//ul[@id="categories"]/li/a'):
 		title = category.xpath('./h2/text()')[0]
@@ -114,8 +109,7 @@ def Categories(title, directory_type):
 @route('/video/vimeo/directory', page=int)
 def GetDirectory(title, url, page=1):
 
-#	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
-	oc = ObjectContainer(title2=title, view_group='InfoList')
+	oc = ObjectContainer(title2=title)
 	html = HTML.ElementFromURL(url % page)
 
 	for el in html.xpath('//ol[@id="browse_list"]/li'):
@@ -161,8 +155,7 @@ def GetDirectory(title, url, page=1):
 @route('/video/vimeo/videos', page=int, cacheTime=int, allow_sync=True)
 def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 
-#	oc = ObjectContainer(title2='%s - %d' % (title, page), view_group='InfoList')
-	oc = ObjectContainer(title2=title, view_group='InfoList')
+	oc = ObjectContainer(title2=title)
 
 	if not url.startswith('http'):
 		url = '%s/%s' % (VIMEO_URL, url)
@@ -232,7 +225,7 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 @route('/video/vimeo/videos/rss')
 def GetVideosRSS(url, title):
 
-	oc = ObjectContainer(title2=title, view_group='InfoList')
+	oc = ObjectContainer(title2=title)
 
 	if not url.startswith('http'):
 		url = '%s/%s' % (VIMEO_URL, url)
@@ -330,7 +323,6 @@ def GetMyStuff(title):
 
 	oc = ObjectContainer(
 		title2 = title,
-		view_group = 'List',
 		objects = [
 			DirectoryObject(
 				key		= Callback(GetVideos, title=L('My Videos'), url=VIMEO_MY_VIDEOS % user, cacheTime=300),
