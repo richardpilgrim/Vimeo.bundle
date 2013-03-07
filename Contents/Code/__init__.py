@@ -111,7 +111,7 @@ def GetDirectory(title, url, page=1):
 	oc = ObjectContainer(title2=title)
 	html = HTML.ElementFromURL(url % page)
 
-	for el in html.xpath('//ol[@id="browse_list"]/li'):
+	for el in html.xpath('//ol[contains(@class, "browse")]/li'):
 
 		# It appears that some items can be removed and replaced with a placeholder. If this is the
 		# case, it will not have an <a> node and therefore we should ignore it an move on.
@@ -164,7 +164,7 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 
 	@parallelize
 	def GetAllVideos():
-		videos = html.xpath('//ol[@id="browse_list"]/li')
+		videos = html.xpath('//ol[contains(@class, "browse")]/li')
 
 		for num in range(len(videos)):
 			video = videos[num]
