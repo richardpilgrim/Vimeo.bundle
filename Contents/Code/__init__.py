@@ -51,7 +51,7 @@ def MainMenu():
 				summary	= L('Hand-picked videos we like.')
 			),
 			DirectoryObject(
-				key		= Callback(GetVideos, title=L('HD'), url=VIMEO_CHANNEL % 'hd'),
+				key		= Callback(GetDirectory, title=L('HD'), url=VIMEO_CATEGORY_CHANNELS % 'hd'),
 				title	= L('HD'),
 				summary	= L('Amazing HD quality videos for you.')
 			),
