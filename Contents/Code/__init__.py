@@ -1,6 +1,6 @@
 VIMEO_NAMESPACE = {'media':'http://search.yahoo.com/mrss/'}
 
-VIMEO_URL = 'http://vimeo.com'
+VIMEO_URL = 'https://vimeo.com'
 #VIMEO_SEARCH = '%s/search/page:%%d/sort:relevant/format:detail?q=%%s' % VIMEO_URL
 VIMEO_CATEGORIES = '%s/categories' % VIMEO_URL
 
@@ -152,13 +152,16 @@ def GetDirectory(title, url, page=1):
 
 ####################################################################################################
 @route('/video/vimeo/videos', page=int, cacheTime=int, allow_sync=True)
-def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
+def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR, ajaxRequest = False):
 
 	oc = ObjectContainer(title2=title)
 
 	if not url.startswith('http'):
 		url = '%s/%s' % (VIMEO_URL, url)
 
+	if ajaxRequest:
+		HTTP.Headers['X-Requested-With'] = 'XMLHttpRequest'
+		
 	html = HTML.ElementFromURL(url % page, cacheTime=cacheTime)
 	results = {}
 
@@ -182,6 +185,7 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 
 				try:
 					page = HTML.ElementFromURL(url, cacheTime=CACHE_1WEEK)
+					Log(HTML.StringFromElement(page, encoding='utf8'))
 
 					if len(page.xpath('//header[@id = "page_header"]//h1[contains(text(), "Private Video")]')) > 0:
 						return
@@ -218,6 +222,9 @@ def GetVideos(title, url, page=1, cacheTime=CACHE_1HOUR):
 	if len(oc) == 0 and page > 1:
 		return ObjectContainer(header = "No More Videos", message = "No more videos are available...")
 
+	if ajaxRequest:
+		del HTTP.Headers['X-Requested-With']
+		
 	return oc
 
 ####################################################################################################
@@ -340,7 +347,7 @@ def GetMyStuff(title):
 				title	= L('My Groups')
 			),
 			DirectoryObject(
-				key		= Callback(GetVideos, title=L('Watch Later'), url=VIMEO_WATCH_LATER, cacheTime=300),
+				key		= Callback(GetVideos, title=L('Watch Later'), url=VIMEO_WATCH_LATER, cacheTime=300, ajaxRequest = True),
 				title	= L('Watch Later')
 			),
 			DirectoryObject(
